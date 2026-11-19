@@ -1,36 +1,8 @@
-DASHBOARD PELAYANAN JASA MARITIM - KSOP Kelas III Tanjung Wangi
-=====================================================
-Bahasa: HTML, CSS, JavaScript, PHP, MySQL
-
-CARA MENJALANKAN (pakai Laragon + HeidiSQL)
--------------------------------------------
-1. Buka Laragon, lalu klik "Start All" (Apache dan MySQL menyala).
-2. Salin folder "ksop-php" ke  C:\laragon\www\
-3. Buka HeidiSQL (di Laragon: klik tombol "Database", atau menu Laragon > MySQL > HeidiSQL).
-   - Klik "Open" pada koneksi yang ada (user: root, password: kosong).
-4. Import database dengan file ksop.sql:
-   - Di HeidiSQL klik menu  File > Run SQL file...
-   - Pilih file  C:\laragon\www\ksop-php\database\ksop.sql  lalu klik Open.
-   - Tunggu sampai selesai. Klik kanan daftar database di kiri > Refresh,
-     maka database "ksop_db" dengan 6 tabel akan muncul.
-5. Buka browser, lalu pilih salah satu alamat:
-   - http://localhost/ksop-php/
-   - http://ksop-php.test/   (alamat otomatis dari Laragon. Kalau tidak jalan,
-     klik kanan Laragon > Apache > Reload)
-
 LOGIN AWAL
 ----------
   admin    / admin123
   operator / operator123
 
-Kalau pengaturan MySQL berbeda (misal root memakai password), ubah di  config/koneksi.php
-
-MASALAH UMUM
-------------
-- "Koneksi database gagal"  -> MySQL belum menyala, atau ksop.sql belum dijalankan di HeidiSQL.
-- Halaman tidak ditemukan   -> folder ksop-php belum ada di C:\laragon\www\
-- Mau data kembali seperti awal -> klik "Atur Ulang Data Contoh" di Dashboard,
-  atau jalankan lagi ksop.sql lewat HeidiSQL.
 
 STRUKTUR FILE (dipisah per halaman)
 -----------------------------------
