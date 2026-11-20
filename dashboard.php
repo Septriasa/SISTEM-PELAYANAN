@@ -150,7 +150,7 @@ include 'includes/header.php';
     <span class="ii"><?= ikon('info') ?></span>
     <div>
         <b>Informasi Sistem</b>
-        <p>Pelayanan Jasa Maritim KSOP Kelas III Tanjung Wangi. Data tersimpan di database MySQL dan terhubung ke semua halaman.</p>
+        <p>Dashboard Pelayanan KSOP Kelas III Tanjung Wangi. Data tersimpan di database MySQL dan terhubung ke semua halaman.</p>
     </div>
     <svg class="port" viewBox="0 0 240 70" aria-hidden="true"><path d="M0 66H240" stroke="#9fb0ea" stroke-width="2"/><g fill="none" stroke="#5f77d6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M30 66V22H92M30 22L58 6L92 22M78 22V66"/><path d="M130 66V30H186M130 30L156 16L186 30M174 30V66"/></g><rect x="196" y="48" width="14" height="18" fill="#8ea4ee"/><rect x="212" y="48" width="14" height="18" fill="#c93a3a" opacity=".7"/><rect x="204" y="30" width="14" height="18" fill="#121358" opacity=".6"/></svg>
     <button type="button" class="btn ghost sm" onclick="konfirmasiReset()">Atur Ulang Data Contoh</button>

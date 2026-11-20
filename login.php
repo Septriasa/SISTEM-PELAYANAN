@@ -51,7 +51,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <div class="lcard">
         <div class="brand">
             <span class="logo"><?= ikon('anchor') ?></span>
-            <div class="brand-t"><b>Pelayanan Jasa Maritim</b><small>KSOP Kelas III Tanjung Wangi</small></div>
+            <div class="brand-t"><b>Dashboard Pelayanan</b><small>KSOP Kelas III Tanjung Wangi</small></div>
         </div>
 
         <form method="post" id="lf">
