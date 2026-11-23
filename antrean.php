@@ -3,25 +3,71 @@ include 'config/koneksi.php';
 include 'includes/fungsi.php';
 $admin_login = cek_login($koneksi);
 
-$daftar_status  = array('Menunggu', 'Dipanggil', 'Selesai', 'Batal');
+$daftar_status  = array('Menunggu', 'Dipanggil', 'Selesai', 'Di Tolak');
 $daftar_layanan = array('Pelayanan Kapal Masuk', 'Surat Izin Berlayar', 'Sertifikat Keselamatan Kapal', 'Pendaftaran Kapal', 'Pemanduan Kapal', 'Laporan Kegiatan Kapal');
 
-// Fungsi kecil: antrean yang sedang dipanggil otomatis jadi "Selesai"
-// (dipanggil sebelum ada antrean baru yang dipanggil)
+// Jumlah antrian per halaman. Kalau sudah 25, antrian ke-26 otomatis pindah ke halaman 2.
+define('PER_HALAMAN_ANTRIAN', 25);
+
+// ----- Penyesuaian data lama (aman dijalankan berulang kali) -----
+// 1) nomor lama berhuruf (contoh A026) diubah menjadi 4 digit tanpa huruf (0026)
+mysqli_query($koneksi, "UPDATE antrean SET nomor = LPAD(SUBSTRING(nomor, 2), 4, '0') WHERE nomor REGEXP '^[A-Za-z]'");
+// 2) status lama "Batal" diubah menjadi "Di Tolak"
+mysqli_query($koneksi, "UPDATE antrean SET status = 'Di Tolak' WHERE status = 'Batal'");
+
+// Halaman ini hanya menampilkan antrian BULAN INI.
+// Antrian bulan sebelumnya otomatis tersimpan sebagai rekap di halaman Laporan.
+$bulan_ini     = date('Y-m');
+$kondisi_bulan = "DATE_FORMAT(tanggal, '%Y-%m') = '$bulan_ini'";
+
+// Fungsi kecil: antrian yang sedang dipanggil otomatis jadi "Selesai"
+// (dipanggil sebelum ada antrian baru yang dipanggil)
 function selesaikan_yang_dipanggil($koneksi)
 {
     mysqli_query($koneksi, "UPDATE antrean SET status = 'Selesai' WHERE status = 'Dipanggil'");
 }
 
+// Bagian bawah tabel: tulisan "Menampilkan data ..." dan tombol halaman
+function paging_antrian($halaman, $jumlah_halaman, $jumlah_di_halaman)
+{
+    // tampilkan paling banyak 5 nomor halaman
+    $awal  = max(1, $halaman - 2);
+    $akhir = min($jumlah_halaman, $awal + 4);
+    $awal  = max(1, $akhir - 4);
+
+    $html  = '<div class="tfoot"><span class="muted">Menampilkan data ' . $jumlah_di_halaman . '</span><div class="pager">';
+
+    if ($halaman <= 1) {
+        $html .= '<a class="mati" aria-label="Sebelumnya">' . ikon('left') . '</a>';
+    } else {
+        $html .= '<a href="' . e(link_halaman($halaman - 1)) . '" aria-label="Sebelumnya">' . ikon('left') . '</a>';
+    }
+
+    for ($p = $awal; $p <= $akhir; $p++) {
+        $kelas = ($p == $halaman) ? 'cur' : '';
+        $html .= '<a class="' . $kelas . '" href="' . e(link_halaman($p)) . '">' . $p . '</a>';
+    }
+
+    if ($halaman >= $jumlah_halaman) {
+        $html .= '<a class="mati" aria-label="Berikutnya">' . ikon('right') . '</a>';
+    } else {
+        $html .= '<a href="' . e(link_halaman($halaman + 1)) . '" aria-label="Berikutnya">' . ikon('right') . '</a>';
+    }
+
+    $html .= '</div></div>';
+    return $html;
+}
+
 
 // ========== BAGIAN 1: memproses form ==========
+// Antrian baru TIDAK dibuat dari halaman ini (nanti masuk dari website pengguna).
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     $aksi = ambil_post('aksi');
     $id   = (int)ambil_post('id');
 
-    // ----- TAMBAH atau UBAH -----
-    if ($aksi == 'simpan') {
+    // ----- UBAH -----
+    if ($aksi == 'simpan' && $id > 0) {
         $nama    = bersih($koneksi, ambil_post('nama'));
         $layanan = ambil_post('layanan');
         $tanggal = bersih($koneksi, ambil_post('tanggal'));
@@ -37,16 +83,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 mysqli_query($koneksi, "UPDATE antrean SET status = 'Selesai' WHERE status = 'Dipanggil' AND id <> $id");
             }
 
-            if ($id > 0) {
-                mysqli_query($koneksi, "UPDATE antrean SET nama='$nama', layanan='$layanan', tanggal='$tanggal', status='$status' WHERE id=$id");
-                catat_aktivitas($koneksi, 'edit', 'Antrean diperbarui: ' . ambil_post('nama'));
-                set_pesan('Antrean berhasil diperbarui.');
-            } else {
-                $nomor = nomor_antrean($koneksi);   // contoh: A027
-                mysqli_query($koneksi, "INSERT INTO antrean (nomor, nama, layanan, tanggal, status) VALUES ('$nomor', '$nama', '$layanan', '$tanggal', '$status')");
-                catat_aktivitas($koneksi, 'plus', 'Antrean ditambahkan: ' . $nomor . ' (' . ambil_post('nama') . ')');
-                set_pesan('Antrean berhasil ditambahkan.');
-            }
+            mysqli_query($koneksi, "UPDATE antrean SET nama='$nama', layanan='$layanan', tanggal='$tanggal', status='$status' WHERE id=$id");
+            catat_aktivitas($koneksi, 'edit', 'Antrian diperbarui: ' . ambil_post('nama'));
+            set_pesan('Antrian berhasil diperbarui.');
         }
     }
 
@@ -55,8 +94,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $data = ambil_satu($koneksi, "SELECT nomor FROM antrean WHERE id=$id");
         if ($data) {
             mysqli_query($koneksi, "DELETE FROM antrean WHERE id=$id");
-            catat_aktivitas($koneksi, 'trash', 'Antrean dihapus: ' . $data['nomor']);
-            set_pesan('Antrean berhasil dihapus.');
+            catat_aktivitas($koneksi, 'trash', 'Antrian dihapus: ' . $data['nomor']);
+            set_pesan('Antrian berhasil dihapus.');
         }
     }
 
@@ -68,25 +107,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             if ($nilai == 'Dipanggil') {
                 selesaikan_yang_dipanggil($koneksi);
                 mysqli_query($koneksi, "UPDATE antrean SET status='Dipanggil' WHERE id=$id");
-                catat_aktivitas($koneksi, 'ticket', 'Antrean ' . $data['nomor'] . ' sedang dipanggil');
-                set_pesan('Antrean ' . $data['nomor'] . ' sedang dipanggil.');
+                catat_aktivitas($koneksi, 'ticket', 'Antrian ' . $data['nomor'] . ' sedang dipanggil');
+                set_pesan('Antrian ' . $data['nomor'] . ' sedang dipanggil.');
             } else {
                 mysqli_query($koneksi, "UPDATE antrean SET status='Selesai' WHERE id=$id");
-                catat_aktivitas($koneksi, 'check', 'Antrean ' . $data['nomor'] . ' selesai dilayani');
-                set_pesan('Antrean ' . $data['nomor'] . ' selesai dilayani.');
+                catat_aktivitas($koneksi, 'check', 'Antrian ' . $data['nomor'] . ' selesai dilayani');
+                set_pesan('Antrian ' . $data['nomor'] . ' selesai dilayani.');
             }
         }
     }
 
     // ----- PANGGIL BERIKUTNYA (tombol besar di kartu) -----
     if ($aksi == 'berikutnya') {
-        $berikut = ambil_satu($koneksi, "SELECT * FROM antrean WHERE status = 'Menunggu' ORDER BY id ASC LIMIT 1");
+        $berikut = ambil_satu($koneksi, "SELECT * FROM antrean WHERE status = 'Menunggu' AND $kondisi_bulan ORDER BY id ASC LIMIT 1");
         if (!$berikut) {
-            set_pesan('Tidak ada antrean yang menunggu.', 'err');
+            set_pesan('Tidak ada antrian yang menunggu.', 'err');
         } else {
             selesaikan_yang_dipanggil($koneksi);
             mysqli_query($koneksi, "UPDATE antrean SET status='Dipanggil' WHERE id=" . (int)$berikut['id']);
-            catat_aktivitas($koneksi, 'ticket', 'Nomor antrean ' . $berikut['nomor'] . ' sedang dipanggil');
+            catat_aktivitas($koneksi, 'ticket', 'Nomor antrian ' . $berikut['nomor'] . ' sedang dipanggil');
             set_pesan('Memanggil ' . $berikut['nomor'] . ' (' . $berikut['nama'] . ').');
         }
     }
@@ -96,38 +135,30 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
 
 // ========== BAGIAN 2: mengambil data ==========
-$hari_ini = date('Y-m-d');
 
-// data untuk kartu nomor antrean di atas
-$sedang_dipanggil = ambil_satu($koneksi, "SELECT * FROM antrean WHERE status = 'Dipanggil' LIMIT 1");
-$jml_menunggu     = hitung($koneksi, "SELECT COUNT(*) AS jumlah FROM antrean WHERE status = 'Menunggu'");
-$jml_selesai      = hitung($koneksi, "SELECT COUNT(*) AS jumlah FROM antrean WHERE status = 'Selesai' AND tanggal = '$hari_ini'");
+// nomor yang sedang dipanggil (untuk kartu di atas)
+$sedang_dipanggil = ambil_satu($koneksi, "SELECT * FROM antrean WHERE status = 'Dipanggil' AND $kondisi_bulan ORDER BY id DESC LIMIT 1");
 
-// data untuk tabel
-$q      = isset($_GET['q']) ? bersih($koneksi, $_GET['q']) : '';
+// data untuk tabel (hanya bulan ini, bisa difilter status)
 $status = isset($_GET['status']) ? bersih($koneksi, $_GET['status']) : '';
 
-$kondisi = "1=1";
-if ($q != '') {
-    $kondisi .= " AND (nomor LIKE '%$q%' OR nama LIKE '%$q%' OR layanan LIKE '%$q%' OR status LIKE '%$q%')";
-}
+$kondisi = $kondisi_bulan;
 if ($status != '') {
     $kondisi .= " AND status = '$status'";
 }
 
-$total   = hitung($koneksi, "SELECT COUNT(*) AS jumlah FROM antrean WHERE $kondisi");
-$halaman = halaman_sekarang($total);
-$mulai   = ($halaman - 1) * PER_HALAMAN;
+$total          = hitung($koneksi, "SELECT COUNT(*) AS jumlah FROM antrean WHERE $kondisi");
+$jumlah_halaman = max(1, (int)ceil($total / PER_HALAMAN_ANTRIAN));
+$halaman        = isset($_GET['hal']) ? (int)$_GET['hal'] : 1;
+$halaman        = min($jumlah_halaman, max(1, $halaman));
+$mulai          = ($halaman - 1) * PER_HALAMAN_ANTRIAN;
 
-// urutan: Dipanggil dulu, lalu Menunggu (yang paling lama di atas), lalu sisanya (yang terbaru di atas)
-$urutan = "CASE status WHEN 'Dipanggil' THEN 0 WHEN 'Menunggu' THEN 1 ELSE 2 END, CASE WHEN status IN ('Dipanggil','Menunggu') THEN id ELSE 1000000 - id END";
-$data   = ambil_semua($koneksi, "SELECT * FROM antrean WHERE $kondisi ORDER BY $urutan LIMIT $mulai, " . PER_HALAMAN);
-
-$nomor_baru = nomor_antrean($koneksi);
+// urutan dari nomor terkecil: nomor 1-25 di halaman 1, nomor 26 dst di halaman 2
+$data = ambil_semua($koneksi, "SELECT * FROM antrean WHERE $kondisi ORDER BY id ASC LIMIT $mulai, " . PER_HALAMAN_ANTRIAN);
 
 
 // ========== BAGIAN 3: tampilan (HTML) ==========
-$judul_halaman = 'Nomor Antrean';
+$judul_halaman = 'Nomor Antrian';
 $menu_aktif    = 'antrean';
 $css_tambahan  = array('antrean.css');
 $js_tambahan   = array('antrean.js');
@@ -136,33 +167,35 @@ include 'includes/header.php';
 
 <div class="phead">
     <div>
-        <h1>Nomor Antrean</h1>
-        <p>Kelola antrean pelayanan hari ini</p>
+        <h1>Nomor Antrian</h1>
+        <p>Kelola antrian pelayanan bulan ini. Rekap bulan sebelumnya ada di halaman Laporan.</p>
     </div>
 </div>
 
-<!-- ============ KARTU NOMOR ANTREAN SAAT INI ============ -->
+<!-- ============ KARTU NOMOR ANTRIAN SAAT INI (di tengah) ============ -->
 <section class="card qcard">
     <div class="qnum">
-        <span class="qlbl"><?= ikon('ticket') ?>Nomor Antrean Saat Ini</span>
+        <span class="qlbl"><?= ikon('ticket') ?>Nomor Antrian Saat Ini</span>
         <strong><?= $sedang_dipanggil ? e($sedang_dipanggil['nomor']) : '—' ?></strong>
         <span class="qsub"><?= $sedang_dipanggil ? e($sedang_dipanggil['nama']) . ' · ' . e($sedang_dipanggil['layanan']) : 'Belum ada yang dipanggil' ?></span>
-    </div>
-    <div class="qmeta">
-        <div><b><?= $jml_menunggu ?></b><span>Menunggu</span></div>
-        <div><b><?= $jml_selesai ?></b><span>Selesai hari ini</span></div>
     </div>
     <div class="qbtns">
         <form method="post">
             <input type="hidden" name="aksi" value="berikutnya">
             <button class="btn" type="submit"><?= ikon('mega') ?>Panggil Berikutnya</button>
         </form>
-        <button type="button" class="btn ghost" onclick="tambahAntrean('<?= $nomor_baru ?>')"><?= ikon('plus') ?>Buat Antrean Baru</button>
     </div>
 </section>
 
 <section class="card tcard">
-    <?= kotak_pencarian($daftar_status) ?>
+    <form class="toolbar" method="get">
+        <select class="sel" name="status" onchange="this.form.submit()" aria-label="Filter status">
+            <option value="">Semua Status</option>
+            <?php foreach ($daftar_status as $s) { ?>
+                <option<?= ($status == $s) ? ' selected' : '' ?>><?= e($s) ?></option>
+            <?php } ?>
+        </select>
+    </form>
 
     <div class="tw">
         <table>
@@ -173,7 +206,7 @@ include 'includes/header.php';
             </thead>
             <tbody>
             <?php if (count($data) == 0) { ?>
-                <tr><td colspan="7"><div class="empty"><?= ($q != '' || $status != '') ? 'Tidak ada data yang cocok dengan pencarian.' : 'Belum ada antrean.' ?></div></td></tr>
+                <tr><td colspan="7"><div class="empty"><?= ($status != '') ? 'Tidak ada data yang cocok dengan filter.' : 'Belum ada antrian bulan ini.' ?></div></td></tr>
             <?php } ?>
 
             <?php $no = $mulai + 1; foreach ($data as $r) { ?>
@@ -191,8 +224,8 @@ include 'includes/header.php';
                             } elseif ($r['status'] == 'Dipanggil') {
                                 echo tombol_status($r['id'], 'Selesai', 'ok', 'Tandai selesai', 'check');
                             } ?>
-                            <?= tombol_lihat($r, 'lihatAntrean') ?>
-                            <?= tombol_ubah($r, 'ubahAntrean') ?>
+                            <?= tombol_lihat($r, 'lihatAntrian') ?>
+                            <?= tombol_ubah($r, 'ubahAntrian') ?>
                             <?= tombol_hapus('antrean.php', $r['id'], $r['nomor'] . ' (' . $r['nama'] . ')') ?>
                         </div>
                     </td>
@@ -202,7 +235,7 @@ include 'includes/header.php';
         </table>
     </div>
 
-    <?= buat_paging($total, $halaman, count($data)) ?>
+    <?= paging_antrian($halaman, $jumlah_halaman, count($data)) ?>
 </section>
 
 <?php include 'includes/footer.php'; ?>

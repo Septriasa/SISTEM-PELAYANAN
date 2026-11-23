@@ -180,9 +180,21 @@ function nomor_permohonan($koneksi)
     return 'PMH-' . str_pad(nomor_berikutnya($koneksi, 'permohonan'), 4, '0', STR_PAD_LEFT);
 }
 
+// Nomor antrian: 4 digit tanpa huruf (0001, 0002, 0003, ...).
+// Nomor terus berlanjut selama 1 bulan. Kalau bulan berganti, mulai lagi dari 0001.
 function nomor_antrean($koneksi)
 {
-    return 'A' . str_pad(nomor_berikutnya($koneksi, 'antrean'), 3, '0', STR_PAD_LEFT);
+    $bulan = date('Y-m');
+    $baris = ambil_semua($koneksi, "SELECT nomor FROM antrean WHERE DATE_FORMAT(tanggal, '%Y-%m') = '$bulan'");
+
+    $terbesar = 0;
+    foreach ($baris as $b) {
+        $angka = (int)preg_replace('/\D/', '', $b['nomor']);   // ambil angkanya saja
+        if ($angka > $terbesar) {
+            $terbesar = $angka;
+        }
+    }
+    return str_pad($terbesar + 1, 4, '0', STR_PAD_LEFT);
 }
 
 // ---------- 8. Statistik untuk laporan ----------

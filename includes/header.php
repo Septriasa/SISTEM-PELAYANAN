@@ -11,7 +11,7 @@ $daftar_menu = array(
     array('dashboard.php',  'Dashboard',        'home',   'dashboard'),
     array('pendaftaran.php', 'Data Pendaftaran', 'users',  'pendaftaran'),
     array('permohonan.php', 'Data Permohonan',  'file',   'permohonan'),
-    array('antrean.php',    'Nomor Antrean',    'ticket', 'antrean'),
+    array('antrean.php',    'Nomor Antrian',    'ticket', 'antrean'),
     array('laporan.php',    'Laporan',          'chart',  'laporan'),
     array('admin.php',      'Kelola Admin',     'shield', 'admin')
 );
