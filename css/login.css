@@ -1,0 +1,53 @@
+.login{
+   min-height:100%;
+   display:grid;
+   place-items:center;
+   padding:24px max(16px,env(safe-area-inset-right,0px)) 24px max(16px,env(safe-area-inset-left,0px));
+   background:linear-gradient(160deg,#121358,#0a0b3a);
+   position:relative;
+   overflow:hidden
+}
+.login .lw{
+   position:absolute;
+   left:0;
+   right:0;
+   bottom:0;
+   width:100%;
+   height:200px;
+   pointer-events:none
+}
+.lcard{
+   position:relative;
+   width:min(400px,100%);
+   background:#fff;
+   border-radius:20px;padding:28px;box-shadow:0 30px 80px rgba(0,0,0,.35)
+}
+.lcard .brand{
+   border-bottom:0;
+   padding:0 0 14px;
+   color:var(--navy)
+}
+.lcard .logo{
+   background:var(--navy);
+   color:#fff
+}
+.lcard .brand small{
+   opacity:.7
+}
+.lcard form{
+   display:flex;
+   flex-direction:column;
+   gap:14px;margin-top:4px
+}
+.lcard .hint{
+   font-size:12.5px;
+   color:var(--muted);
+   margin-top:14px;
+   text-align:center
+}
+.lerr{
+   color:var(--red);
+   font-weight:600;
+   font-size:13px;
+   min-height:18px
+}

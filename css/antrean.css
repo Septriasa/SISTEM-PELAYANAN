@@ -1,0 +1,69 @@
+.qcard{
+   display:flex;
+   flex-direction:column;
+   justify-content:center;
+   text-align:center;
+   align-items:center;
+   gap:18px 28px;
+   padding:20px 22px;
+   background:linear-gradient(110deg,#fff,#eef2ff)
+}
+.qnum{
+   display:flex;
+   flex-direction:column;
+   align-items:center;
+   min-width:200px
+}
+.qlbl{
+   display:flex;
+   justify-content:center;
+   align-items:center;
+   gap:8px;
+   color:var(--muted);
+   font-weight:700;
+   font-size:13px
+}
+.qnum strong{
+   font-size:clamp(44px,8vw,64px);
+   line-height:1.05;
+   color:var(--navy);
+   font-weight:800;
+   letter-spacing:.02em
+}
+.qsub{
+   color:var(--muted);
+   font-weight:600
+}
+.qmeta{
+   display:flex;
+   gap:12px
+}
+.qmeta div{
+   padding:10px 18px;
+   border-radius:12px;
+   background:#fff;
+   border:1px solid var(--line);
+   text-align:center
+}
+.qmeta b{
+   display:block;
+   font-size:22px;
+   color:var(--navy)
+}
+.qmeta span{
+   font-size:12px;
+   color:var(--muted);
+   font-weight:600
+}
+.qbtns{
+   display:flex;
+   flex-wrap:wrap;
+   gap:10px;
+   justify-content:center
+}
+
+/* warna status "Di Tolak" (sama seperti status Ditolak di halaman lain) */
+.p-di-tolak{
+   background:var(--red-50);
+   color:var(--red)
+}
