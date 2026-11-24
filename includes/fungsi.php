@@ -215,12 +215,36 @@ function kondisi_tanggal($koneksi, $dari, $sampai)
 function hitung_statistik($koneksi, $dari, $sampai)
 {
     $k = kondisi_tanggal($koneksi, $dari, $sampai);
+
     $hasil = array();
-    $hasil['pend'] = hitung($koneksi, "SELECT COUNT(*) AS jumlah FROM pendaftaran WHERE $k");
-    $hasil['perm'] = hitung($koneksi, "SELECT COUNT(*) AS jumlah FROM permohonan WHERE $k");
-    $hasil['ok']   = hitung($koneksi, "SELECT COUNT(*) AS jumlah FROM permohonan WHERE $k AND status = 'Disetujui'");
-    $hasil['no']   = hitung($koneksi, "SELECT COUNT(*) AS jumlah FROM permohonan WHERE $k AND status = 'Ditolak'");
-    $hasil['ant']  = hitung($koneksi, "SELECT COUNT(*) AS jumlah FROM antrean WHERE $k AND status = 'Selesai'");
+
+    // Total pendaftaran
+    $hasil['pend'] = hitung(
+        $koneksi,
+        "SELECT COUNT(*) AS jumlah FROM pendaftaran WHERE $k"
+    );
+
+    // Pendaftaran disetujui
+    $hasil['ok'] = hitung(
+        $koneksi,
+        "SELECT COUNT(*) AS jumlah FROM pendaftaran WHERE $k AND status = 'Disetujui'"
+    );
+
+    // Pendaftaran ditolak
+    $hasil['no'] = hitung(
+        $koneksi,
+        "SELECT COUNT(*) AS jumlah FROM pendaftaran WHERE $k AND status = 'Ditolak'"
+    );
+
+    // Antrean selesai
+    $hasil['ant'] = hitung(
+        $koneksi,
+        "SELECT COUNT(*) AS jumlah FROM antrean WHERE $k AND status = 'Selesai'"
+    );
+
+    // Dipertahankan untuk kompatibilitas kolom arsip laporan lama
+    $hasil['perm'] = 0;
+
     return $hasil;
 }
 
@@ -255,7 +279,7 @@ function buat_paging($total, $halaman, $jumlah_di_halaman)
     $mulai = ($halaman - 1) * PER_HALAMAN;
 
     if ($total > 0) {
-        $teks = 'Menampilkan ' . ($mulai + 1) . '–' . ($mulai + $jumlah_di_halaman) . ' dari ' . $total . ' data';
+      $teks = 'Menampilkan 1-8 data';
     } else {
         $teks = 'Tidak ada data';
     }
@@ -359,10 +383,20 @@ function tombol_hapus($file, $id, $nama)
 }
 
 // tombol cepat untuk mengubah status (Setujui, Tolak, Panggil, Selesai)
+
+// tombol cepat untuk mengubah status (Setujui, Tolak, Panggil, Selesai)
 function tombol_status($id, $nilai, $kelas, $judul, $nama_ikon)
 {
-    return '<form method="post"><input type="hidden" name="aksi" value="status"><input type="hidden" name="id" value="' . (int)$id . '"><input type="hidden" name="nilai" value="' . e($nilai) . '"><button class="ab ' . $kelas . '" title="' . $judul . '" aria-label="' . $judul . '">' . ikon($nama_ikon) . '</button></form>';
+    return '<form method="post" style="display:inline-block; margin:0;">'
+        . '<input type="hidden" name="aksi" value="status">'
+        . '<input type="hidden" name="id" value="' . (int)$id . '">'
+        . '<input type="hidden" name="nilai" value="' . e($nilai) . '">'
+        . '<button type="submit" class="ab ' . $kelas . '" title="' . $judul . '" aria-label="' . $judul . '">'
+        . ikon($nama_ikon)
+        . '</button>'
+        . '</form>';
 }
+
 
 // kotak pencarian + filter status di atas tabel.
 // Form memakai method GET, jadi kata kunci muncul di alamat web (?q=...).

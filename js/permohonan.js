@@ -1,9 +1,3 @@
-// ==========================================================
-// File: js/permohonan.js
-// Fungsi: JavaScript khusus halaman Data Permohonan.
-// Berisi popup TAMBAH, UBAH, dan LIHAT.
-// ==========================================================
-
 var jenisLayanan = ['Pelayanan Kapal Masuk', 'Surat Izin Berlayar', 'Sertifikat Keselamatan Kapal', 'Pendaftaran Kapal', 'Pemanduan Kapal', 'Laporan Kegiatan Kapal'];
 
 // daftar isian form (dipakai oleh popup tambah dan popup ubah)

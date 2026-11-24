@@ -1,12 +1,3 @@
-// ==========================================================
-// File: js/pendaftaran.js
-// Fungsi: JavaScript khusus halaman Data Pendaftaran.
-// Berisi popup UBAH dan popup LIHAT. (Tidak ada popup tambah.)
-// Fungsi bukaForm() dan bukaLihat() ada di js/app.js
-// ==========================================================
-
-// Popup UBAH. "tombol" adalah tombol yang diklik. Data barisnya
-// disimpan PHP di atribut data-json, lalu dibaca di sini.
 function ubahPendaftaran(tombol) {
     var d = JSON.parse(tombol.dataset.json);
 

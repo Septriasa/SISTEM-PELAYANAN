@@ -1,37 +1,48 @@
+
 <?php
 include 'config/koneksi.php';
 include 'includes/fungsi.php';
+include 'includes/grafik.php';
+
 $admin_login = cek_login($koneksi);
 
 $judul_halaman = 'Dashboard';
 $menu_aktif    = 'dashboard';
-$css_tambahan  = array('dashboard.css');
+$css_tambahan  = array('dashboard.css', 'grafik.css');
 $js_tambahan   = array('dashboard.js');
 
-// nama depan admin untuk ucapan selamat datang
+// Nama depan admin untuk ucapan selamat datang
 $nama_depan = explode(' ', $admin_login['nama']);
 $nama_depan = $nama_depan[0];
 
+// ---------- DATA GRAFIK ----------
+$dari_grafik   = date('Y') . '-01-01';
+$sampai_grafik = date('Y-m-d');
+$tahun_grafik  = (int)date('Y');
+
+$grafik_bulanan = grafik_ambil_bulanan($koneksi, $tahun_grafik);
+$grafik_status  = grafik_ambil_status($koneksi, $dari_grafik, $sampai_grafik);
+
 // ---------- Menghitung angka kartu statistik ----------
-$bulan_ini = date('Y-m');  
+$bulan_ini = date('Y-m');
 
 $total_pendaftaran = hitung($koneksi, "SELECT COUNT(*) AS jumlah FROM pendaftaran");
 $total_menunggu    = hitung($koneksi, "SELECT COUNT(*) AS jumlah FROM pendaftaran WHERE status = 'Menunggu Verifikasi'");
 $total_disetujui   = hitung($koneksi, "SELECT COUNT(*) AS jumlah FROM pendaftaran WHERE status = 'Disetujui'");
 $total_ditolak     = hitung($koneksi, "SELECT COUNT(*) AS jumlah FROM pendaftaran WHERE status = 'Ditolak'");
 
-// tambahan di bulan ini (angka kecil di pojok kartu)
+// Tambahan di bulan ini
 $bln_total     = hitung($koneksi, "SELECT COUNT(*) AS jumlah FROM pendaftaran WHERE DATE_FORMAT(tanggal, '%Y-%m') = '$bulan_ini'");
 $bln_menunggu  = hitung($koneksi, "SELECT COUNT(*) AS jumlah FROM pendaftaran WHERE DATE_FORMAT(tanggal, '%Y-%m') = '$bulan_ini' AND status = 'Menunggu Verifikasi'");
 $bln_disetujui = hitung($koneksi, "SELECT COUNT(*) AS jumlah FROM pendaftaran WHERE DATE_FORMAT(tanggal, '%Y-%m') = '$bulan_ini' AND status = 'Disetujui'");
 $bln_ditolak   = hitung($koneksi, "SELECT COUNT(*) AS jumlah FROM pendaftaran WHERE DATE_FORMAT(tanggal, '%Y-%m') = '$bulan_ini' AND status = 'Ditolak'");
 
-// daftar kartu: [judul, angka, tambahan bulan ini, ikon, warna, filter status]
+// Daftar kartu
 $kartu = array(
-    array('Total Pendaftaran',    $total_pendaftaran, $bln_total,     'users', 'blue',  ''),
-    array('Menunggu Verifikasi',  $total_menunggu,    $bln_menunggu,  'clock', 'amber', 'Menunggu Verifikasi'),
-    array('Disetujui',            $total_disetujui,   $bln_disetujui, 'check', 'green', 'Disetujui'),
-    array('Ditolak',              $total_ditolak,     $bln_ditolak,   'x',     'red',   'Ditolak')
+    array('Total Pendaftaran', $total_pendaftaran, $bln_total, 'users', 'blue', ''),
+    array('Menunggu Verifikasi', $total_menunggu, $bln_menunggu, 'clock', 'amber', 'Menunggu Verifikasi'),
+    array('Disetujui', $total_disetujui, $bln_disetujui, 'check', 'green', 'Disetujui'),
+    array('Ditolak', $total_ditolak, $bln_ditolak, 'x', 'red', 'Ditolak')
 );
 
 // ---------- Aktivitas terbaru ----------
@@ -39,15 +50,13 @@ $aktivitas = ambil_semua($koneksi, "SELECT * FROM aktivitas ORDER BY waktu DESC,
 $aktivitas_5 = array_slice($aktivitas, 0, 5);
 
 // ---------- Menu cepat ----------
-$jml_permohonan = hitung($koneksi, "SELECT COUNT(*) AS jumlah FROM permohonan");
 $jml_menunggu_antrean = hitung($koneksi, "SELECT COUNT(*) AS jumlah FROM antrean WHERE status = 'Menunggu'");
 $jml_laporan = hitung($koneksi, "SELECT COUNT(*) AS jumlah FROM laporan");
 
 $menu_cepat = array(
-    array('pendaftaran.php', 'Data Pendaftaran', 'users',  $total_pendaftaran . ' data'),
-    array('permohonan.php',  'Data Permohonan',  'file',   $jml_permohonan . ' data'),
-    array('antrean.php',     'Nomor Antrean',    'ticket', $jml_menunggu_antrean . ' menunggu'),
-    array('laporan.php',     'Laporan',          'chart',  $jml_laporan . ' tersimpan')
+    array('pendaftaran.php', 'Data Pendaftaran', 'users', $total_pendaftaran . ' data'),
+    array('antrean.php', 'Nomor Antrean', 'ticket', $jml_menunggu_antrean . ' menunggu'),
+    array('laporan.php', 'Laporan', 'chart', $jml_laporan . ' tersimpan')
 );
 
 include 'includes/header.php';
@@ -56,15 +65,21 @@ include 'includes/header.php';
 <!-- ============ BANNER SELAMAT DATANG ============ -->
 <section class="hero">
     <div class="hero-t">
-        <h1>Selamat Datang, <?= e($nama_depan) ?>!</h1>
+        <h1>Selamat Datang</h1>
         <p>Kelola data dan layanan dengan mudah melalui dashboard ini.</p>
     </div>
     <div class="hero-a">
-        <!-- gambar kapal (SVG) -->
+        <!-- Gambar kapal (SVG) -->
         <svg viewBox="0 0 520 240" preserveAspectRatio="xMaxYMax slice" aria-hidden="true">
             <defs>
-                <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d6e1fb"/><stop offset="1" stop-color="#f3f6ff"/></linearGradient>
-                <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3552c9"/><stop offset="1" stop-color="#121358"/></linearGradient>
+                <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0" stop-color="#d6e1fb"/>
+                    <stop offset="1" stop-color="#f3f6ff"/>
+                </linearGradient>
+                <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0" stop-color="#3552c9"/>
+                    <stop offset="1" stop-color="#121358"/>
+                </linearGradient>
             </defs>
             <rect width="520" height="240" fill="url(#sky)"/>
             <circle cx="420" cy="62" r="32" fill="#ffffff" opacity=".75"/>
@@ -81,7 +96,7 @@ include 'includes/header.php';
             <rect x="236" y="96" width="16" height="16" fill="#121358"/>
             <rect x="236" y="96" width="16" height="4" fill="#c93a3a"/>
             <?php
-            // tumpukan peti kemas di kapal (dibuat dengan perulangan)
+            // Tumpukan peti kemas di kapal
             $warna_peti = array('#c93a3a', '#e0a030', '#2b4ad0', '#16875a', '#8ea4ee', '#e8ecf8');
             for ($baris = 0; $baris < 3; $baris++) {
                 $jumlah_kolom = ($baris == 2) ? 3 : 5;
@@ -104,69 +119,33 @@ include 'includes/header.php';
     <?php foreach ($kartu as $k) { ?>
         <a class="stat s-<?= $k[4] ?>" href="pendaftaran.php<?= ($k[5] != '') ? '?status=' . urlencode($k[5]) : '' ?>">
             <span class="si"><?= ikon($k[3]) ?></span>
-            <span class="sb"><small><?= $k[0] ?></small><b><?= $k[1] ?></b></span>
+            <span class="sb">
+                <small><?= $k[0] ?></small>
+                <b><?= $k[1] ?></b>
+            </span>
             <span class="sd">+<?= $k[2] ?> bulan ini</span>
         </a>
     <?php } ?>
 </section>
 
-<div class="cols">
+<!-- ============ GRAFIK ============ -->
+<section class="grafik-grid">
 
-    <!-- ============ AKTIVITAS TERBARU ============ -->
-    <section class="card panel">
-        <div class="ph">
-            <h2>Aktivitas Terbaru</h2>
-            <button type="button" class="link" onclick="bukaIsi('Semua Aktivitas', 'semua-aktivitas')">Lihat Semua</button>
-        </div>
-        <ul class="acts-list">
-            <?php foreach ($aktivitas_5 as $a) { ?>
-                <li>
-                    <span class="ai a-<?= e($a['ikon']) ?>"><?= ikon($a['ikon']) ?></span>
-                    <span class="at"><?= e($a['teks']) ?></span>
-                    <time><?= waktu_lalu($a['waktu']) ?></time>
-                </li>
-            <?php } ?>
-        </ul>
-    </section>
-
-    <!-- ============ MENU CEPAT ============ -->
-    <section class="card panel">
-        <div class="ph"><h2>Menu Cepat</h2></div>
-        <div class="qgrid">
-            <?php foreach ($menu_cepat as $m) { ?>
-                <a class="qtile" href="<?= $m[0] ?>">
-                    <span class="qi"><?= ikon($m[2]) ?></span>
-                    <b><?= $m[1] ?></b>
-                    <small><?= $m[3] ?></small>
-                    <span class="go"><?= ikon('arrow') ?></span>
-                </a>
-            <?php } ?>
-        </div>
-    </section>
-</div>
-
-<!-- ============ INFORMASI SISTEM ============ -->
-<section class="card info">
-    <span class="ii"><?= ikon('info') ?></span>
-    <div>
-        <b>Informasi Sistem</b>
-        <p>Dashboard Pelayanan KSOP Kelas III Tanjung Wangi. Data tersimpan di database MySQL dan terhubung ke semua halaman.</p>
+    <!-- Grafik batang -->
+    <div class="card panel">
+        <h2>Pendaftaran per Bulan</h2>
+        <p class="sub">Juli - Desember <?= $tahun_grafik ?></p>
+        <?php grafik_render_batang($grafik_bulanan); ?>
     </div>
-    <svg class="port" viewBox="0 0 240 70" aria-hidden="true"><path d="M0 66H240" stroke="#9fb0ea" stroke-width="2"/><g fill="none" stroke="#5f77d6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M30 66V22H92M30 22L58 6L92 22M78 22V66"/><path d="M130 66V30H186M130 30L156 16L186 30M174 30V66"/></g><rect x="196" y="48" width="14" height="18" fill="#8ea4ee"/><rect x="212" y="48" width="14" height="18" fill="#c93a3a" opacity=".7"/><rect x="204" y="30" width="14" height="18" fill="#121358" opacity=".6"/></svg>
-    <button type="button" class="btn ghost sm" onclick="konfirmasiReset()">Atur Ulang Data Contoh</button>
-</section>
 
-<!-- Daftar lengkap aktivitas (disembunyikan, ditampilkan lewat tombol "Lihat Semua") -->
-<div id="semua-aktivitas" hidden>
-    <ul class="acts-list">
-        <?php foreach ($aktivitas as $a) { ?>
-            <li>
-                <span class="ai a-<?= e($a['ikon']) ?>"><?= ikon($a['ikon']) ?></span>
-                <span class="at"><?= e($a['teks']) ?></span>
-                <time><?= waktu_lalu($a['waktu']) ?></time>
-            </li>
-        <?php } ?>
-    </ul>
-</div>
+    <!-- Grafik lingkaran -->
+    <div class="card panel">
+        <h2>Status Pendaftaran</h2>
+        <p class="sub"><?= tgl($dari_grafik) ?> s/d <?= tgl($sampai_grafik) ?></p>
+        <?php grafik_render_lingkaran($grafik_status); ?>
+    </div>
+
+</section>
+<!-- ============ /GRAFIK ============ -->
 
 <?php include 'includes/footer.php'; ?>

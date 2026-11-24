@@ -1,9 +1,3 @@
--- =====================================================
--- DATABASE DASHBOARD KSOP TANJUNGPINANG
--- Cara pakai: buka HeidiSQL -> menu File -> Run SQL file... -> pilih file ini -> Open.
--- File ini juga dipakai tombol "Atur Ulang Data Contoh" di dashboard.
--- =====================================================
-
 CREATE DATABASE IF NOT EXISTS ksop_db CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 USE ksop_db;
 
@@ -89,7 +83,7 @@ CREATE TABLE aktivitas (
 -- Password admin  : admin123
 -- Password operator: operator123 (disimpan dalam bentuk hash, bukan teks asli)
 INSERT INTO admin (nama, username, email, password, peran, status) VALUES
-('Admin KSOP', 'admin', 'admin@ksop.co.id', '$2y$10$k8O.Mx/sN9O32trbGGBSn.pGS5Z8Fi85cZje7x7P622FIoPopaN7e', 'Super Admin', 'Aktif'),
+('Admin', 'admin', 'admin@ksop.co.id', '$2y$10$k8O.Mx/sN9O32trbGGBSn.pGS5Z8Fi85cZje7x7P622FIoPopaN7e', 'Super Admin', 'Aktif'),
 ('Rina Kartika', 'operator', 'rina.kartika@ksop.co.id', '$2y$10$HzZlrCIRO/ZFNmEnTpmCaOC5nRo54wcA87mAmcHgLiutXhZFwM23W', 'Operator', 'Aktif');
 
 INSERT INTO pendaftaran (nama, perusahaan, email, telepon, tanggal, status, catatan) VALUES
@@ -168,7 +162,7 @@ INSERT INTO aktivitas (ikon, teks, waktu) VALUES
 SET @d1 = DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 1 MONTH), '%Y-%m-01');
 SET @d2 = LAST_DAY(@d1);
 INSERT INTO laporan (judul, dari, sampai, catatan, dibuat, oleh, jml_pendaftaran, jml_permohonan, jml_disetujui, jml_ditolak, jml_antrean)
-SELECT 'Laporan Bulan Lalu', @d1, @d2, 'Rekap bulanan untuk arsip kantor.', DATE_SUB(NOW(), INTERVAL 1 DAY), 'Admin KSOP',
+SELECT 'Laporan Bulan Lalu', @d1, @d2, 'Rekap bulanan untuk arsip kantor.', DATE_SUB(NOW(), INTERVAL 1 DAY), 'Admin',
   (SELECT COUNT(*) FROM pendaftaran WHERE tanggal BETWEEN @d1 AND @d2),
   (SELECT COUNT(*) FROM permohonan WHERE tanggal BETWEEN @d1 AND @d2),
   (SELECT COUNT(*) FROM permohonan WHERE tanggal BETWEEN @d1 AND @d2 AND status = 'Disetujui'),
@@ -178,7 +172,7 @@ SELECT 'Laporan Bulan Lalu', @d1, @d2, 'Rekap bulanan untuk arsip kantor.', DATE
 SET @d3 = MAKEDATE(YEAR(CURDATE()), 1);
 SET @d4 = CURDATE();
 INSERT INTO laporan (judul, dari, sampai, catatan, dibuat, oleh, jml_pendaftaran, jml_permohonan, jml_disetujui, jml_ditolak, jml_antrean)
-SELECT 'Laporan Tahun Berjalan', @d3, @d4, 'Akumulasi sejak awal tahun.', DATE_SUB(NOW(), INTERVAL 1 DAY), 'Admin KSOP',
+SELECT 'Laporan Tahun Berjalan', @d3, @d4, 'Akumulasi sejak awal tahun.', DATE_SUB(NOW(), INTERVAL 1 DAY), 'Admin',
   (SELECT COUNT(*) FROM pendaftaran WHERE tanggal BETWEEN @d3 AND @d4),
   (SELECT COUNT(*) FROM permohonan WHERE tanggal BETWEEN @d3 AND @d4),
   (SELECT COUNT(*) FROM permohonan WHERE tanggal BETWEEN @d3 AND @d4 AND status = 'Disetujui'),

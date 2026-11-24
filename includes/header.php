@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/../config/koneksi.php';
 $admin_login = $admin_login ?? [
-    'nama' => 'Admin KSOP',
+    'nama' => 'Admin',
     'peran' => 'Administrator',
     'email' => '',
     'username' => 'admin'
@@ -10,7 +10,6 @@ $admin_login = $admin_login ?? [
 $daftar_menu = array(
     array('dashboard.php',  'Dashboard',        'home',   'dashboard'),
     array('pendaftaran.php', 'Data Pendaftaran', 'users',  'pendaftaran'),
-    array('permohonan.php', 'Data Permohonan',  'file',   'permohonan'),
     array('antrean.php',    'Nomor Antrian',    'ticket', 'antrean'),
     array('laporan.php',    'Laporan',          'chart',  'laporan'),
     array('admin.php',      'Kelola Admin',     'shield', 'admin')
@@ -19,11 +18,10 @@ $daftar_menu = array(
 // angka kecil (badge) di samping menu = data yang perlu ditindaklanjuti
 $badge = array();
 $badge['pendaftaran'] = hitung($koneksi, "SELECT COUNT(*) AS jumlah FROM pendaftaran WHERE status = 'Menunggu Verifikasi'");
-$badge['permohonan']  = hitung($koneksi, "SELECT COUNT(*) AS jumlah FROM permohonan WHERE status = 'Diproses'");
 $badge['antrean']     = hitung($koneksi, "SELECT COUNT(*) AS jumlah FROM antrean WHERE status = 'Menunggu'");
 
-// huruf awal nama untuk lingkaran avatar (contoh: Admin KSOP -> AK)
-$nama_admin = $admin_login['nama'] ?? 'Admin KSOP';
+// huruf awal nama untuk lingkaran avatar (contoh: Admin -> AK)
+$nama_admin = $admin_login['nama'] ?? 'Admin';
 
 $inisial = '';
 $kata_nama = explode(' ', $nama_admin);
@@ -61,7 +59,7 @@ if (!is_array($css_tambahan)) {
 
         <div class="brand">
             <span class="logo"><?= ikon('anchor') ?></span>
-            <div class="brand-t"><b>Pelayanan Jasa Maritim</b><small>KSOP Kelas III Tanjung Wangi</small></div>
+            <div class="brand-t"><b>Pelayanan Jasa</b><small>KSOP Kelas III Tanjung Wangi</small></div>
         </div>
 
         <nav class="nav" aria-label="Menu utama">

@@ -1,9 +1,3 @@
-// ==========================================================
-// File: js/laporan.js
-// Fungsi: JavaScript khusus halaman Laporan.
-// Berisi popup TAMBAH, UBAH, LIHAT arsip laporan, dan Salin CSV.
-// ==========================================================
-
 function isianLaporan() {
     return [
         { nama: 'judul',   label: 'Judul Laporan', wajib: true, penuh: true },
