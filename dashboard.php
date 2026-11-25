@@ -117,13 +117,16 @@ include 'includes/header.php';
 <!-- ============ 4 KARTU STATISTIK ============ -->
 <section class="stats">
     <?php foreach ($kartu as $k) { ?>
-        <a class="stat s-<?= $k[4] ?>" href="pendaftaran.php<?= ($k[5] != '') ? '?status=' . urlencode($k[5]) : '' ?>">
+        <a class="stat s-<?= $k[4] ?>"
+           href="pendaftaran.php<?= ($k[5] != '') ? '?status=' . urlencode($k[5]) : '' ?>">
+
             <span class="si"><?= ikon($k[3]) ?></span>
+
             <span class="sb">
                 <small><?= $k[0] ?></small>
                 <b><?= $k[1] ?></b>
             </span>
-            <span class="sd">+<?= $k[2] ?> bulan ini</span>
+
         </a>
     <?php } ?>
 </section>
