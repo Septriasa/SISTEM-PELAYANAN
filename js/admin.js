@@ -10,9 +10,8 @@ function isianAdmin(adminBaru) {
         { nama: 'nama',     label: 'Nama Lengkap', wajib: true },
         { nama: 'username', label: 'Username',     wajib: true, ph: 'huruf kecil tanpa spasi' },
         { nama: 'email',    label: 'Email',        tipe: 'email' },
-        { nama: 'password', label: 'Kata Sandi',   tipe: 'password', wajib: adminBaru, ph: adminBaru ? 'Minimal 6 karakter' : 'Kosongkan jika tidak diubah' },
-        { nama: 'peran',    label: 'Peran',        tipe: 'select', pilihan: ['Super Admin', 'Operator'] },
-        { nama: 'status',   label: 'Status Akun',  tipe: 'select', pilihan: ['Aktif', 'Nonaktif'] }
+         { nama: 'password', label: 'Kata Sandi',   tipe: 'password', wajib: adminBaru, ph: adminBaru ? 'Minimal 6 karakter' : 'Kosongkan jika tidak diubah' },
+        
     ];
 }
 

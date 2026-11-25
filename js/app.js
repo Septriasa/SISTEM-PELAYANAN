@@ -181,7 +181,7 @@ function bukaForm(opsi) {
     }
     html += '</div></form>';
 
-    var footer = '<button type="button" class="btn ghost" onclick="tutupModal()">Batal</button>';
+    var footer = '<button type="button" class="btn ghost" onclick="tutupModal()">Kembali</button>';
     footer += '<button type="submit" class="btn" form="form-modal">' + (opsi.tombol || 'Simpan') + '</button>';
 
     bukaModal(opsi.judul, html, footer, false);
@@ -221,7 +221,7 @@ function konfirmasiHapus(file, id, nama) {
     html += '<p class="confirm">Anda akan menghapus <b>' + esc(nama) + '</b>. Tindakan ini tidak bisa dibatalkan.</p>';
     html += '</form>';
 
-    var footer = '<button type="button" class="btn ghost" onclick="tutupModal()">Batal</button>';
+    var footer = '<button type="button" class="btn ghost" onclick="tutupModal()">Kembali/button>';
     footer += '<button type="submit" class="btn danger" form="form-hapus">' + IKON_HAPUS + 'Ya, Hapus</button>';
     bukaModal('Hapus data?', html, footer, false);
 }
