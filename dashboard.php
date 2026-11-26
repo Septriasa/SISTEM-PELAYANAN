@@ -1,6 +1,6 @@
 
 <?php
-include 'config/koneksi.php';
+include 'assets/config/koneksi.php';
 include 'includes/fungsi.php';
 include 'includes/grafik.php';
 
@@ -107,7 +107,7 @@ include 'includes/header.php';
 ?>
 
 <!-- Memastikan CSS grafik dimuat -->
-<link rel="stylesheet" href="css/grafik.css?v=2">
+<link rel="stylesheet" href="assets/css/style.css">
 
 <!-- ==========================================
      BANNER SELAMAT DATANG

@@ -1,6 +1,6 @@
 
 <?php
-include 'config/koneksi.php';
+include 'assets/config/koneksi.php';
 include 'includes/fungsi.php';
 $admin_login = cek_login($koneksi);
 

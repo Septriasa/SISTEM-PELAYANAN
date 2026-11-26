@@ -4,7 +4,7 @@
 // Fungsi: halaman login admin.
 // Username dan password dicek ke tabel "admin" di database.
 // ==========================================================
-include 'config/koneksi.php';
+include 'assets/config/koneksi.php';
 include 'includes/fungsi.php';
 
 // kalau sudah login, tidak perlu login lagi
@@ -41,8 +41,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Login - KSOP TanjungWangi</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="css/style.css">
-<link rel="stylesheet" href="css/login.css">
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body>
 <div class="login">

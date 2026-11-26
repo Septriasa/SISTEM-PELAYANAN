@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../config/koneksi.php';
+require_once __DIR__ . '/../assets/config/koneksi.php';
 $admin_login = $admin_login ?? [
     'nama' => 'Admin',
     'peran' => 'Administrator',
@@ -44,9 +44,9 @@ if (!is_array($css_tambahan)) {
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title><?= e($judul_halaman) ?> - KSOP Kelas III Tanjung Wangi</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="assets/css/style.css">
 <?php foreach ($css_tambahan as $file_css) { ?>
-<link rel="stylesheet" href="css/<?= $file_css ?>">
+<link rel="stylesheet" href="assets/css/style.css<?= $file_css ?>">
 <?php } ?>
 </head>
 <body>

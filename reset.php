@@ -1,6 +1,6 @@
 
 <?php
-include_once __DIR__ . '/config/koneksi.php';
+include_once __DIR__ . '/assets/config/koneksi.php';
 include_once __DIR__ . '/includes/fungsi.php';
 
 $admin_login = cek_login($koneksi);
