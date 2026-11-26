@@ -94,6 +94,7 @@ function cek_login($koneksi)
         header("Location: login.php");
         exit;
     }
+    rekap_antrian_bulan_lalu($koneksi);   // rekap antrian bulan lalu (lihat fungsi di bawah)
     return $admin;
 }
 
@@ -178,6 +179,15 @@ function nomor_berikutnya($koneksi, $tabel)
 function nomor_permohonan($koneksi)
 {
     return 'PMH-' . str_pad(nomor_berikutnya($koneksi, 'permohonan'), 4, '0', STR_PAD_LEFT);
+}
+
+// ---------- Rekap bulanan antrian ----------
+// Antrian yang sudah DIPANGGIL tetapi bulannya sudah lewat otomatis dinyatakan "Selesai",
+// sehingga masuk ke rekap bulan tersebut di halaman Laporan.
+function rekap_antrian_bulan_lalu($koneksi)
+{
+    $bulan = date('Y-m');
+    mysqli_query($koneksi, "UPDATE antrean SET status = 'Selesai' WHERE status = 'Dipanggil' AND DATE_FORMAT(tanggal, '%Y-%m') < '$bulan'");
 }
 
 // Nomor antrian: 4 digit tanpa huruf (0001, 0002, 0003, ...).
@@ -416,4 +426,4 @@ function kotak_pencarian($daftar_status, $placeholder = 'Cari data...')
     }
     $html .= '</form>';
     return $html;
-}
+}   

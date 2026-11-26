@@ -4,19 +4,36 @@ include 'includes/fungsi.php';
 $admin_login = cek_login($koneksi);
 
 $daftar_status  = array('Menunggu', 'Dipanggil', 'Selesai', 'Di Tolak');
-$daftar_layanan = array('Pelayanan Kapal Masuk', 'Surat Izin Berlayar', 'Sertifikat Keselamatan Kapal', 'Pendaftaran Kapal', 'Pemanduan Kapal', 'Laporan Kegiatan Kapal');
+// Jenis layanan (keperluan). Sama dengan pilihan keperluan di website pengguna.
+$daftar_layanan = array('Masa Layar', 'Sign On/Off', 'Perpanjang', 'Buku Baru');
 
-// Jumlah antrian per halaman. Kalau sudah 25, antrian ke-26 otomatis pindah ke halaman 2.
-define('PER_HALAMAN_ANTRIAN', 25);
+// Jumlah antrian per halaman. Kalau sudah 10, antrian ke-11 otomatis pindah ke halaman 2.
+define('PER_HALAMAN_ANTRIAN', 10);
 
 // ----- Penyesuaian data lama (aman dijalankan berulang kali) -----
 // 1) nomor lama berhuruf (contoh A026) diubah menjadi 4 digit tanpa huruf (0026)
 mysqli_query($koneksi, "UPDATE antrean SET nomor = LPAD(SUBSTRING(nomor, 2), 4, '0') WHERE nomor REGEXP '^[A-Za-z]'");
 // 2) status lama "Batal" diubah menjadi "Di Tolak"
 mysqli_query($koneksi, "UPDATE antrean SET status = 'Di Tolak' WHERE status = 'Batal'");
+// 3) nama layanan lama (data contoh) disesuaikan ke jenis layanan yang baru
+$layanan_lama = array(
+    'Pelayanan Kapal Masuk'        => $daftar_layanan[0],
+    'Surat Izin Berlayar'          => $daftar_layanan[1],
+    'Sertifikat Keselamatan Kapal' => $daftar_layanan[2],
+    'Pendaftaran Kapal'            => $daftar_layanan[3],
+    'Pemanduan Kapal'              => $daftar_layanan[0],
+    'Laporan Kegiatan Kapal'       => $daftar_layanan[1]
+);
+$case_layanan = '';
+$daftar_lama  = array();
+foreach ($layanan_lama as $lama => $baru) {
+    $case_layanan .= " WHEN '" . bersih($koneksi, $lama) . "' THEN '" . bersih($koneksi, $baru) . "'";
+    $daftar_lama[] = "'" . bersih($koneksi, $lama) . "'";
+}
+mysqli_query($koneksi, "UPDATE antrean SET layanan = CASE layanan $case_layanan ELSE layanan END WHERE layanan IN (" . implode(',', $daftar_lama) . ")");
 
 // Halaman ini hanya menampilkan antrian BULAN INI.
-// Antrian bulan sebelumnya otomatis tersimpan sebagai rekap di halaman Laporan.
+// Antrian bulan sebelumnya yang sudah dipanggil otomatis masuk rekap bulanan di halaman Laporan.
 $bulan_ini     = date('Y-m');
 $kondisi_bulan = "DATE_FORMAT(tanggal, '%Y-%m') = '$bulan_ini'";
 
@@ -35,7 +52,7 @@ function paging_antrian($halaman, $jumlah_halaman, $jumlah_di_halaman)
     $akhir = min($jumlah_halaman, $awal + 4);
     $awal  = max(1, $akhir - 4);
 
-    $html  = '<div class="tfoot"><span class="muted">Menampilkan data ' . $jumlah_di_halaman . '</span><div class="pager">';
+    $html  = '<div class="tfoot"><span class="muted">Menampilkan ' . $jumlah_di_halaman . ' data</span><div class="pager">';
 
     if ($halaman <= 1) {
         $html .= '<a class="mati" aria-label="Sebelumnya">' . ikon('left') . '</a>';
@@ -60,62 +77,10 @@ function paging_antrian($halaman, $jumlah_halaman, $jumlah_di_halaman)
 
 
 // ========== BAGIAN 1: memproses form ==========
-// Antrian baru TIDAK dibuat dari halaman ini (nanti masuk dari website pengguna).
+// Halaman ini hanya untuk memanggil dan melihat antrian (tidak ada ubah / hapus).
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     $aksi = ambil_post('aksi');
-    $id   = (int)ambil_post('id');
-
-    // ----- UBAH -----
-    if ($aksi == 'simpan' && $id > 0) {
-        $nama    = bersih($koneksi, ambil_post('nama'));
-        $layanan = ambil_post('layanan');
-        $tanggal = bersih($koneksi, ambil_post('tanggal'));
-        $status  = ambil_post('status');
-
-        if ($nama == '' || $tanggal == '') {
-            set_pesan('Nama pemohon dan tanggal wajib diisi.', 'err');
-        } elseif (!in_array($layanan, $daftar_layanan) || !in_array($status, $daftar_status)) {
-            set_pesan('Jenis layanan atau status tidak valid.', 'err');
-        } else {
-            // kalau status yang disimpan "Dipanggil", yang lain diselesaikan dulu
-            if ($status == 'Dipanggil') {
-                mysqli_query($koneksi, "UPDATE antrean SET status = 'Selesai' WHERE status = 'Dipanggil' AND id <> $id");
-            }
-
-            mysqli_query($koneksi, "UPDATE antrean SET nama='$nama', layanan='$layanan', tanggal='$tanggal', status='$status' WHERE id=$id");
-            catat_aktivitas($koneksi, 'edit', 'Antrian diperbarui: ' . ambil_post('nama'));
-            set_pesan('Antrian berhasil diperbarui.');
-        }
-    }
-
-    // ----- HAPUS -----
-    if ($aksi == 'hapus' && $id > 0) {
-        $data = ambil_satu($koneksi, "SELECT nomor FROM antrean WHERE id=$id");
-        if ($data) {
-            mysqli_query($koneksi, "DELETE FROM antrean WHERE id=$id");
-            catat_aktivitas($koneksi, 'trash', 'Antrian dihapus: ' . $data['nomor']);
-            set_pesan('Antrian berhasil dihapus.');
-        }
-    }
-
-    // ----- PANGGIL / SELESAI (tombol cepat di tabel) -----
-    if ($aksi == 'status' && $id > 0) {
-        $nilai = ambil_post('nilai');
-        $data  = ambil_satu($koneksi, "SELECT nomor FROM antrean WHERE id=$id");
-        if ($data && ($nilai == 'Dipanggil' || $nilai == 'Selesai')) {
-            if ($nilai == 'Dipanggil') {
-                selesaikan_yang_dipanggil($koneksi);
-                mysqli_query($koneksi, "UPDATE antrean SET status='Dipanggil' WHERE id=$id");
-                catat_aktivitas($koneksi, 'ticket', 'Antrian ' . $data['nomor'] . ' sedang dipanggil');
-                set_pesan('Antrian ' . $data['nomor'] . ' sedang dipanggil.');
-            } else {
-                mysqli_query($koneksi, "UPDATE antrean SET status='Selesai' WHERE id=$id");
-                catat_aktivitas($koneksi, 'check', 'Antrian ' . $data['nomor'] . ' selesai dilayani');
-                set_pesan('Antrian ' . $data['nomor'] . ' selesai dilayani.');
-            }
-        }
-    }
 
     // ----- PANGGIL BERIKUTNYA (tombol besar di kartu) -----
     if ($aksi == 'berikutnya') {
@@ -161,14 +126,14 @@ $data = ambil_semua($koneksi, "SELECT * FROM antrean WHERE $kondisi ORDER BY id 
 $judul_halaman = 'Nomor Antrian';
 $menu_aktif    = 'antrean';
 $css_tambahan  = array('antrean.css');
-$js_tambahan   = array('antrean.js');
+$js_tambahan   = array();   // popup LIHAT ditulis langsung di bagian bawah halaman ini
 include 'includes/header.php';
 ?>
 
 <div class="phead">
     <div>
         <h1>Nomor Antrian</h1>
-        <p>Kelola antrian pelayanan bulan ini. Rekap bulan sebelumnya ada di halaman Laporan.</p>
+        <p>Antrian pelayanan bulan ini. Rekap bulan sebelumnya otomatis masuk ke halaman Laporan.</p>
     </div>
 </div>
 
@@ -219,14 +184,7 @@ include 'includes/header.php';
                     <td><?= pill($r['status']) ?></td>
                     <td>
                         <div class="acts">
-                            <?php if ($r['status'] == 'Menunggu') {
-                                echo tombol_status($r['id'], 'Dipanggil', 'view', 'Panggil', 'mega');
-                            } elseif ($r['status'] == 'Dipanggil') {
-                                echo tombol_status($r['id'], 'Selesai', 'ok', 'Tandai selesai', 'check');
-                            } ?>
-                            <?= tombol_lihat($r, 'lihatAntrian') ?>
-                            <?= tombol_ubah($r, 'ubahAntrian') ?>
-                            <?= tombol_hapus('antrean.php', $r['id'], $r['nomor'] . ' (' . $r['nama'] . ')') ?>
+                            <?= tombol_lihat($r, 'lihatDetailAntrian') ?>
                         </div>
                     </td>
                 </tr>
@@ -237,5 +195,21 @@ include 'includes/header.php';
 
     <?= paging_antrian($halaman, $jumlah_halaman, count($data)) ?>
 </section>
+
+<script>
+// Popup LIHAT (ikon mata): hanya ada tombol "Tutup".
+// Tidak ada tombol "Ubah" karena halaman ini hanya untuk memanggil antrian.
+function lihatDetailAntrian(tombol) {
+    var d = JSON.parse(tombol.dataset.json);
+
+    bukaLihat('Detail Antrian', [
+        ['Nomor Antrian', d.nomor],
+        ['Nama Pemohon',  d.nama],
+        ['Jenis Layanan', d.layanan],
+        ['Tanggal',       tgl(d.tanggal)],
+        ['Status',        pill(d.status), true]
+    ]);
+}
+</script>
 
 <?php include 'includes/footer.php'; ?>
