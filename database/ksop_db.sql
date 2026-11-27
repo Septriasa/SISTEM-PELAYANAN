@@ -24,25 +24,12 @@ CREATE TABLE admin (
 CREATE TABLE pendaftaran (
   id INT AUTO_INCREMENT PRIMARY KEY,
   nama VARCHAR(100) NOT NULL,
-  perusahaan VARCHAR(100) NOT NULL,
+  Jenis_Layanan VARCHAR(50) NOT NULL,          -- Sign On/Off, Masa Layar, Perpanjang, Buku Baru (diisi pengguna)
   email VARCHAR(100),
   telepon VARCHAR(30),
   tanggal DATE NOT NULL,
   status VARCHAR(30) NOT NULL DEFAULT 'Menunggu Verifikasi',
-  catatan TEXT
-);
-
--- Tabel permohonan layanan kapal
-CREATE TABLE permohonan (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  nomor VARCHAR(20) NOT NULL,
-  pemohon VARCHAR(100) NOT NULL,
-  layanan VARCHAR(100) NOT NULL,
-  kapal VARCHAR(100) NOT NULL,
-  gt INT,
-  tanggal DATE NOT NULL,
-  status VARCHAR(30) NOT NULL DEFAULT 'Diproses',
-  keterangan TEXT
+  Nomor_Antrian VARCHAR(10) NULL DEFAULT NULL  -- dibuat otomatis saat disetujui / ditolak
 );
 
 -- Tabel nomor antrean
@@ -86,33 +73,21 @@ INSERT INTO admin (nama, username, email, password, peran, status) VALUES
 ('Admin', 'admin', 'admin@ksop.co.id', '$2y$10$k8O.Mx/sN9O32trbGGBSn.pGS5Z8Fi85cZje7x7P622FIoPopaN7e', 'Super Admin', 'Aktif'),
 ('Rina Kartika', 'operator', 'rina.kartika@ksop.co.id', '$2y$10$HzZlrCIRO/ZFNmEnTpmCaOC5nRo54wcA87mAmcHgLiutXhZFwM23W', 'Operator', 'Aktif');
 
-INSERT INTO pendaftaran (nama, perusahaan, email, telepon, tanggal, status, catatan) VALUES
-('Andi Pratama', 'Pengguna Jasa', 'andi.pratama@contoh.co.id', '0812-3100-5200', DATE_SUB(CURDATE(), INTERVAL 0 DAY), 'Disetujui', ''),
-('Siti Rahmawati', 'PT Bahari Nusantara', 'siti.rahmawati@contoh.co.id', '0812-3237-5511', DATE_SUB(CURDATE(), INTERVAL 6 DAY), 'Disetujui', ''),
-('Budi Santoso', 'PT Tirta Mandiri', 'budi.santoso@contoh.co.id', '0812-3374-5822', DATE_SUB(CURDATE(), INTERVAL 12 DAY), 'Menunggu Verifikasi', ''),
-('Dewi Lestari', 'PT Tanjung Sejahtera', 'dewi.lestari@contoh.co.id', '0812-3511-6133', DATE_SUB(CURDATE(), INTERVAL 18 DAY), 'Disetujui', ''),
-('Rizky Ramadhan', 'CV Laut Biru', 'rizky.ramadhan@contoh.co.id', '0812-3648-6444', DATE_SUB(CURDATE(), INTERVAL 24 DAY), 'Ditolak', ''),
-('Maya Sari', 'Pengguna Jasa', 'maya.sari@contoh.co.id', '0812-3785-6755', DATE_SUB(CURDATE(), INTERVAL 31 DAY), 'Menunggu Verifikasi', ''),
-('Hendra Wijaya', 'PT Kepri Logistik', 'hendra.wijaya@contoh.co.id', '0812-3922-7066', DATE_SUB(CURDATE(), INTERVAL 37 DAY), 'Disetujui', ''),
-('Fitri Handayani', 'PT Samudra Jaya', 'fitri.handayani@contoh.co.id', '0812-4059-7377', DATE_SUB(CURDATE(), INTERVAL 43 DAY), 'Disetujui', ''),
-('Agus Salim', 'PT Karya Pelayaran', 'agus.salim@contoh.co.id', '0812-4196-7688', DATE_SUB(CURDATE(), INTERVAL 49 DAY), 'Disetujui', ''),
-('Putri Ayu', 'CV Pesisir Makmur', 'putri.ayu@contoh.co.id', '0812-4333-7999', DATE_SUB(CURDATE(), INTERVAL 55 DAY), 'Menunggu Verifikasi', ''),
-('Joko Susilo', 'Pengguna Jasa', 'joko.susilo@contoh.co.id', '0812-4470-8310', DATE_SUB(CURDATE(), INTERVAL 62 DAY), 'Disetujui', ''),
-('Nurul Hidayah', 'PT Bahari Nusantara', 'nurul.hidayah@contoh.co.id', '0812-4607-8621', DATE_SUB(CURDATE(), INTERVAL 68 DAY), 'Ditolak', ''),
-('Dimas Anggara', 'PT Tirta Mandiri', 'dimas.anggara@contoh.co.id', '0812-4744-8932', DATE_SUB(CURDATE(), INTERVAL 74 DAY), 'Menunggu Verifikasi', ''),
-('Lina Marlina', 'PT Tanjung Sejahtera', 'lina.marlina@contoh.co.id', '0812-4881-9243', DATE_SUB(CURDATE(), INTERVAL 80 DAY), 'Disetujui', ''),
-('Eko Prasetyo', 'CV Laut Biru', 'eko.prasetyo@contoh.co.id', '0812-5018-9554', DATE_SUB(CURDATE(), INTERVAL 86 DAY), 'Disetujui', ''),
-('Yusuf Maulana', 'Pengguna Jasa', 'yusuf.maulana@contoh.co.id', '0812-5155-9865', DATE_SUB(CURDATE(), INTERVAL 93 DAY), 'Disetujui', ''),
-('Rina Kartika', 'PT Kepri Logistik', 'rina.kartika@contoh.co.id', '0812-5292-0176', DATE_SUB(CURDATE(), INTERVAL 99 DAY), 'Menunggu Verifikasi', ''),
-('Fajar Nugroho', 'PT Samudra Jaya', 'fajar.nugroho@contoh.co.id', '0812-5429-0487', DATE_SUB(CURDATE(), INTERVAL 105 DAY), 'Disetujui', ''),
-('Wulan Sari', 'PT Karya Pelayaran', 'wulan.sari@contoh.co.id', '0812-5566-0798', DATE_SUB(CURDATE(), INTERVAL 111 DAY), 'Ditolak', ''),
-('Taufik Hidayat', 'CV Pesisir Makmur', 'taufik.hidayat@contoh.co.id', '0812-5703-1109', DATE_SUB(CURDATE(), INTERVAL 117 DAY), 'Menunggu Verifikasi', ''),
-('Andi Pratama', 'Pengguna Jasa', 'andi.pratama@contoh.co.id', '0812-5840-1420', DATE_SUB(CURDATE(), INTERVAL 124 DAY), 'Disetujui', ''),
-('Siti Rahmawati', 'PT Bahari Nusantara', 'siti.rahmawati@contoh.co.id', '0812-5977-1731', DATE_SUB(CURDATE(), INTERVAL 130 DAY), 'Disetujui', ''),
-('Budi Santoso', 'PT Tirta Mandiri', 'budi.santoso@contoh.co.id', '0812-6114-2042', DATE_SUB(CURDATE(), INTERVAL 136 DAY), 'Disetujui', ''),
-('Dewi Lestari', 'PT Tanjung Sejahtera', 'dewi.lestari@contoh.co.id', '0812-6251-2353', DATE_SUB(CURDATE(), INTERVAL 142 DAY), 'Menunggu Verifikasi', ''),
-('Rizky Ramadhan', 'CV Laut Biru', 'rizky.ramadhan@contoh.co.id', '0812-6388-2664', DATE_SUB(CURDATE(), INTERVAL 148 DAY), 'Disetujui', ''),
-('Maya Sari', 'Pengguna Jasa', 'maya.sari@contoh.co.id', '0812-6525-2975', DATE_SUB(CURDATE(), INTERVAL 155 DAY), 'Ditolak', '');
+-- Data pendaftaran disamakan dengan data Nomor Antrian (0015 - 0026): nama, jenis layanan,
+-- tanggal, dan nomor antrean sama. Pendaftaran yang sudah punya nomor antrean berstatus Disetujui.
+INSERT INTO pendaftaran (nama, Jenis_Layanan, email, telepon, tanggal, status, Nomor_Antrian) VALUES
+('Maya Sari', 'Buku Baru', 'maya.sari@contoh.co.id', '0812-3785-6755', CURDATE(), 'Disetujui', '0015'),
+('Agus Salim', 'Masa Layar', 'agus.salim@contoh.co.id', '0812-4196-7688', CURDATE(), 'Disetujui', '0016'),
+('Nurul Hidayah', 'Sign On/Off', 'nurul.hidayah@contoh.co.id', '0812-4607-8621', CURDATE(), 'Disetujui', '0017'),
+('Eko Prasetyo', 'Masa Layar', 'eko.prasetyo@contoh.co.id', '0812-5018-9554', CURDATE(), 'Disetujui', '0018'),
+('Fajar Nugroho', 'Sign On/Off', 'fajar.nugroho@contoh.co.id', '0812-5429-0487', CURDATE(), 'Disetujui', '0019'),
+('Andi Pratama', 'Perpanjang', 'andi.pratama@contoh.co.id', '0812-3100-5200', CURDATE(), 'Disetujui', '0020'),
+('Dewi Lestari', 'Buku Baru', 'dewi.lestari@contoh.co.id', '0812-3511-6133', CURDATE(), 'Disetujui', '0021'),
+('Hendra Wijaya', 'Masa Layar', 'hendra.wijaya@contoh.co.id', '0812-3922-7066', CURDATE(), 'Disetujui', '0022'),
+('Putri Ayu', 'Sign On/Off', 'putri.ayu@contoh.co.id', '0812-4333-7999', CURDATE(), 'Disetujui', '0023'),
+('Dimas Anggara', 'Masa Layar', 'dimas.anggara@contoh.co.id', '0812-4744-8932', CURDATE(), 'Disetujui', '0024'),
+('Yusuf Maulana', 'Sign On/Off', 'yusuf.maulana@contoh.co.id', '0812-5155-9865', CURDATE(), 'Disetujui', '0025'),
+('Wulan Sari', 'Perpanjang', 'wulan.sari@contoh.co.id', '0812-5566-0798', CURDATE(), 'Disetujui', '0026');
 
 INSERT INTO permohonan (nomor, pemohon, layanan, kapal, gt, tanggal, status, keterangan) VALUES
 ('PMH-0022', 'Dewi Lestari', 'Pelayanan Kapal Masuk', 'KM Sinar Bahari', 145, DATE_SUB(CURDATE(), INTERVAL 0 DAY), 'Diproses', ''),

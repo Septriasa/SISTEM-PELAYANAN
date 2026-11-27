@@ -1,16 +1,5 @@
 <?php
-// ==========================================================
-// File: includes/fungsi.php
-// Fungsi: kumpulan fungsi bantu yang dipakai di banyak halaman,
-// supaya kode di tiap halaman tidak berulang-ulang.
-// ==========================================================
-
-// Berapa baris data yang tampil di satu halaman tabel
 define('PER_HALAMAN', 8);
-
-// ---------- 1. Fungsi keamanan ----------
-
-// e() = menampilkan teks dengan aman di HTML (mencegah XSS)
 function e($teks)
 {
     return htmlspecialchars((string)$teks, ENT_QUOTES, 'UTF-8');
@@ -32,9 +21,7 @@ function bersih_semua($koneksi, $data)
     return $hasil;
 }
 
-// ---------- 2. Fungsi database ----------
-
-// mengambil banyak baris data (hasilnya array)
+//databse
 function ambil_semua($koneksi, $sql)
 {
     $hasil = mysqli_query($koneksi, $sql);
@@ -59,8 +46,6 @@ function hitung($koneksi, $sql)
     return (int)$baris['jumlah'];
 }
 
-// ---------- 3. Pesan (toast) setelah simpan / hapus ----------
-
 function set_pesan($pesan, $tipe = 'ok')
 {
     $_SESSION['pesan'] = array('teks' => $pesan, 'tipe' => $tipe);
@@ -70,16 +55,12 @@ function ambil_pesan()
 {
     if (isset($_SESSION['pesan'])) {
         $pesan = $_SESSION['pesan'];
-        unset($_SESSION['pesan']);   // pesan hanya tampil satu kali
+        unset($_SESSION['pesan']);   
         return $pesan;
     }
     return null;
 }
 
-// ---------- 4. Login ----------
-
-// cek_login() dipanggil di setiap halaman (kecuali login.php).
-// Kalau belum login, pengguna dikirim ke halaman login.
 function cek_login($koneksi)
 {
     if (!isset($_SESSION['admin_id'])) {
@@ -261,10 +242,10 @@ function hitung_statistik($koneksi, $dari, $sampai)
 // ---------- 9. Pagination (nomor halaman di bawah tabel) ----------
 
 // halaman yang sedang dibuka (diambil dari ?hal=2 di alamat web)
-function halaman_sekarang($total)
+function halaman_sekarang($total, $per_halaman = PER_HALAMAN)
 {
     $hal = isset($_GET['hal']) ? (int)$_GET['hal'] : 1;
-    $jumlah_halaman = max(1, ceil($total / PER_HALAMAN));
+    $jumlah_halaman = max(1, ceil($total / $per_halaman));
     if ($hal < 1) {
         $hal = 1;
     }
@@ -283,13 +264,13 @@ function link_halaman($nomor)
 }
 
 // membuat bagian bawah tabel: tulisan "Menampilkan ..." dan tombol halaman
-function buat_paging($total, $halaman, $jumlah_di_halaman)
+function buat_paging($total, $halaman, $jumlah_di_halaman, $per_halaman = PER_HALAMAN)
 {
-    $jumlah_halaman = max(1, ceil($total / PER_HALAMAN));
-    $mulai = ($halaman - 1) * PER_HALAMAN;
+    $jumlah_halaman = max(1, ceil($total / $per_halaman));
 
     if ($total > 0) {
-      $teks = 'Menampilkan 1-8 data';
+        // sesuai jumlah data yang tampil di halaman ini (8 data -> "8 data", 2 data -> "2 data")
+        $teks = 'Menampilkan ' . (int)$jumlah_di_halaman . ' data';
     } else {
         $teks = 'Tidak ada data';
     }
@@ -426,4 +407,4 @@ function kotak_pencarian($daftar_status, $placeholder = 'Cari data...')
     }
     $html .= '</form>';
     return $html;
-}   
+}

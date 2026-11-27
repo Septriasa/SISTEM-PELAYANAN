@@ -65,39 +65,6 @@ $kartu = array(
     array('Ditolak', $total_ditolak, 'x', 'red', 'Ditolak')
 );
 
-// ==========================================
-// AKTIVITAS TERBARU
-// ==========================================
-
-$aktivitas = ambil_semua(
-    $koneksi,
-    "SELECT * FROM aktivitas
-     ORDER BY waktu DESC, id DESC
-     LIMIT 60"
-);
-
-$aktivitas_5 = array_slice($aktivitas, 0, 5);
-
-// ==========================================
-// MENU CEPAT
-// ==========================================
-
-$jml_menunggu_antrean = hitung(
-    $koneksi,
-    "SELECT COUNT(*) AS jumlah FROM antrean
-     WHERE status = 'Menunggu'"
-);
-
-$jml_laporan = hitung(
-    $koneksi,
-    "SELECT COUNT(*) AS jumlah FROM laporan"
-);
-
-$menu_cepat = array(
-    array('pendaftaran.php', 'Data Pendaftaran', 'users', $total_pendaftaran . ' data'),
-    array('antrean.php', 'Nomor Antrean', 'ticket', $jml_menunggu_antrean . ' menunggu'),
-    array('laporan.php', 'Laporan', 'chart', $jml_laporan . ' tersimpan')
-);
 
 // ==========================================
 // HEADER

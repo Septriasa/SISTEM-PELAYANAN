@@ -1,4 +1,3 @@
-
 <?php
 include 'assets/config/koneksi.php';
 include 'includes/fungsi.php';
@@ -6,25 +5,55 @@ $admin_login = cek_login($koneksi);
 
 $daftar_status = array('Menunggu Verifikasi', 'Disetujui', 'Ditolak');
 
+// Jumlah data per halaman khusus halaman ini
+define('PER_HALAMAN_PENDAFTARAN', 12);
 
-// ========== BAGIAN 1: memproses form (UBAH / HAPUS / STATUS) ==========
+// Membuat nomor antrean berikutnya: 4 digit (0001, 0002, ...), berlanjut per bulan pendaftaran
+function buat_nomor_antrean($koneksi, $tanggal)
+{
+    $bulan = date('Y-m', strtotime($tanggal));
+    $hasil = ambil_satu(
+        $koneksi,
+        "SELECT MAX(CAST(Nomor_Antrian AS UNSIGNED)) AS terakhir
+         FROM pendaftaran
+         WHERE DATE_FORMAT(tanggal, '%Y-%m') = '$bulan'
+         AND Nomor_Antrian IS NOT NULL
+         AND Nomor_Antrian != ''"
+    );
+    $baru = (int)($hasil['terakhir'] ?? 0) + 1;
+    return str_pad($baru, 4, '0', STR_PAD_LEFT);
+}
+
+
+// ========== BAGIAN 1: memproses form (UBAH / HAPUS) ==========
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     $aksi = ambil_post('aksi');
     $id   = (int)ambil_post('id');
 
-    // ----- UBAH data -----
-    if ($aksi == 'simpan' && $id > 0) {
-        $nama          = bersih($koneksi, ambil_post('nama'));
-        $Jenis_Layanan = bersih($koneksi, ambil_post('Jenis_Layanan'));
-        $email         = bersih($koneksi, ambil_post('email'));
-        $telepon       = bersih($koneksi, ambil_post('telepon'));
-        $tanggal       = bersih($koneksi, ambil_post('tanggal'));
-        $status        = ambil_post('status');
-        $catatan       = bersih($koneksi, ambil_post('catatan'));
+    // alamat tujuan setelah selesai (tetap di halaman & filter yang sama)
+    $kembali = 'pendaftaran.php';
+    $balik   = ambil_post('kembali');
+    if ($balik != '' && preg_match('/^\?[A-Za-z0-9_=&%+.\-]*$/', $balik)) {
+        $kembali .= $balik;
+    }
 
-        if ($nama == '' || $Jenis_Layanan == '' || $tanggal == '') {
-            set_pesan('Nama, jenis layanan, dan tanggal wajib diisi.', 'err');
+    // ----- UBAH data (termasuk memproses status) -----
+    if ($aksi == 'simpan' && $id > 0) {
+        $nama    = bersih($koneksi, ambil_post('nama'));
+        $email   = bersih($koneksi, ambil_post('email'));
+        $telepon = bersih($koneksi, ambil_post('telepon'));
+        $tanggal = bersih($koneksi, ambil_post('tanggal'));
+        $status  = ambil_post('status');
+
+        // jenis layanan diisi oleh pengguna, admin tidak mengubahnya
+        $lama = ambil_satu($koneksi, "SELECT nama, status, Nomor_Antrian FROM pendaftaran WHERE id=$id");
+
+        if (!$lama) {
+            set_pesan('Data pendaftaran tidak ditemukan.', 'err');
+
+        } elseif ($nama == '' || $tanggal == '') {
+            set_pesan('Nama dan tanggal wajib diisi.', 'err');
 
         } elseif ($email != '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
             set_pesan('Format email belum benar.', 'err');
@@ -33,18 +62,31 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             set_pesan('Status tidak valid.', 'err');
 
         } else {
+            // nomor antrean dibuat otomatis saat pertama kali diproses (disetujui / ditolak)
+            $set_nomor = '';
+            if (in_array($status, array('Disetujui', 'Ditolak')) && empty($lama['Nomor_Antrian'])) {
+                $set_nomor = ", Nomor_Antrian='" . buat_nomor_antrean($koneksi, $tanggal) . "'";
+            }
+
             mysqli_query($koneksi, "UPDATE pendaftaran SET
                 nama='$nama',
-                Jenis_Layanan='$Jenis_Layanan',
                 email='$email',
                 telepon='$telepon',
                 tanggal='$tanggal',
-                status='$status',
-                catatan='$catatan'
+                status='$status'
+                $set_nomor
                 WHERE id=$id");
 
-            catat_aktivitas($koneksi, 'edit', 'Pendaftaran diperbarui: ' . ambil_post('nama'));
-            set_pesan('Pendaftaran berhasil diperbarui.');
+            if ($status != $lama['status'] && $status == 'Disetujui') {
+                catat_aktivitas($koneksi, 'check', 'Pendaftaran ' . ambil_post('nama') . ' disetujui');
+            } elseif ($status != $lama['status'] && $status == 'Ditolak') {
+                catat_aktivitas($koneksi, 'x', 'Pendaftaran ' . ambil_post('nama') . ' ditolak');
+            } else {
+                catat_aktivitas($koneksi, 'edit', 'Pendaftaran diperbarui: ' . ambil_post('nama'));
+            }
+
+            $_SESSION['baris_ubah'] = $id;   // baris ini disorot setelah kembali
+            set_pesan('Data pendaftaran berhasil diperbarui.');
         }
     }
 
@@ -61,104 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     }
 
-
-    // ----- SETUJUI / TOLAK + NOMOR ANTREAN OTOMATIS -----
-    if ($aksi == 'status' && $id > 0) {
-        $nilai = ambil_post('nilai');
-
-        $data = ambil_satu(
-            $koneksi,
-            "SELECT nama, status, tanggal, Nomor_Antrian
-             FROM pendaftaran
-             WHERE id=$id"
-        );
-
-        if (
-            $data &&
-            $data['status'] == 'Menunggu Verifikasi' &&
-            in_array($nilai, array('Disetujui', 'Ditolak'))
-        ) {
-
-            // ----- JIKA DISETUJUI -----
-            if ($nilai == 'Disetujui') {
-
-                // Mengambil bulan dan tahun pendaftaran
-                $bulan = date('Y-m', strtotime($data['tanggal']));
-
-                // Membuat nomor antrean jika belum ada
-                if (empty($data['Nomor_Antrian'])) {
-
-                    // Mengambil nomor antrean terakhir pada bulan tersebut
-                    $hasil_nomor = ambil_satu(
-                        $koneksi,
-                        "SELECT MAX(CAST(Nomor_Antrian AS UNSIGNED)) AS terakhir
-                         FROM pendaftaran
-                         WHERE DATE_FORMAT(tanggal, '%Y-%m') = '$bulan'
-                         AND Nomor_Antrian IS NOT NULL
-                         AND Nomor_Antrian != ''"
-                    );
-
-                    $nomor_baru = (int)($hasil_nomor['terakhir'] ?? 0) + 1;
-
-                    // Format nomor menjadi 0001, 0002, dan seterusnya
-                    $nomor_antrean_baru = str_pad(
-                        $nomor_baru,
-                        4,
-                        '0',
-                        STR_PAD_LEFT
-                    );
-
-                    mysqli_query(
-                        $koneksi,
-                        "UPDATE pendaftaran
-                         SET status='Disetujui',
-                             Nomor_Antrian='$nomor_antrean_baru'
-                         WHERE id=$id"
-                    );
-
-                } else {
-
-                    // Jika nomor sudah ada, pertahankan nomor sebelumnya
-                    mysqli_query(
-                        $koneksi,
-                        "UPDATE pendaftaran
-                         SET status='Disetujui'
-                         WHERE id=$id"
-                    );
-                }
-
-                catat_aktivitas(
-                    $koneksi,
-                    'check',
-                    'Pendaftaran ' . $data['nama'] . ' disetujui'
-                );
-
-                set_pesan('Pendaftaran ' . $data['nama'] . ' disetujui.');
-
-            }
-
-            // ----- JIKA DITOLAK -----
-            else {
-
-                mysqli_query(
-                    $koneksi,
-                    "UPDATE pendaftaran
-                     SET status='Ditolak'
-                     WHERE id=$id"
-                );
-
-                catat_aktivitas(
-                    $koneksi,
-                    'x',
-                    'Pendaftaran ' . $data['nama'] . ' ditolak'
-                );
-
-                set_pesan('Pendaftaran ' . $data['nama'] . ' ditolak.');
-            }
-        }
-    }
-
-    pindah('pendaftaran.php');
+    pindah($kembali);
 }
 
 
@@ -196,8 +141,8 @@ $total = hitung(
     "SELECT COUNT(*) AS jumlah FROM pendaftaran WHERE $kondisi"
 );
 
-$halaman = halaman_sekarang($total);
-$mulai   = ($halaman - 1) * PER_HALAMAN;
+$halaman = halaman_sekarang($total, PER_HALAMAN_PENDAFTARAN);
+$mulai   = ($halaman - 1) * PER_HALAMAN_PENDAFTARAN;
 
 
 // mengambil data pendaftaran
@@ -206,8 +151,16 @@ $data = ambil_semua(
     "SELECT * FROM pendaftaran
     WHERE $kondisi
     ORDER BY tanggal DESC, id DESC
-    LIMIT $mulai, " . PER_HALAMAN
+    LIMIT $mulai, " . PER_HALAMAN_PENDAFTARAN
 );
+
+
+// baris yang baru saja diubah (untuk disorot sekali)
+$baris_ubah = 0;
+if (isset($_SESSION['baris_ubah'])) {
+    $baris_ubah = (int)$_SESSION['baris_ubah'];
+    unset($_SESSION['baris_ubah']);
+}
 
 
 // ========== BAGIAN 3: tampilan (HTML) ==========
@@ -215,7 +168,7 @@ $data = ambil_semua(
 $judul_halaman = 'Data Pendaftaran';
 $menu_aktif    = 'pendaftaran';
 $css_tambahan  = array('pendaftaran.css');
-$js_tambahan   = array('pendaftaran.js');
+$js_tambahan   = array();   // kode popup ada langsung di bagian bawah halaman ini
 
 include 'includes/header.php';
 ?>
@@ -271,7 +224,7 @@ include 'includes/header.php';
             foreach ($data as $r) {
             ?>
 
-                <tr>
+                <tr<?= ($r['id'] == $baris_ubah) ? ' class="baris-baru"' : '' ?>>
                     <td><?= $no++ ?></td>
 
                     <td>
@@ -301,26 +254,6 @@ include 'includes/header.php';
                     <td>
                         <div class="acts">
 
-                            <?php if ($r['status'] == 'Menunggu Verifikasi') { ?>
-
-                                <?= tombol_status(
-                                    $r['id'],
-                                    'Disetujui',
-                                    'ok',
-                                    'Setujui',
-                                    'check'
-                                ) ?>
-
-                                <?= tombol_status(
-                                    $r['id'],
-                                    'Ditolak',
-                                    'no',
-                                    'Tolak',
-                                    'x'
-                                ) ?>
-
-                            <?php } ?>
-
                             <?= tombol_lihat($r, 'lihatPendaftaran') ?>
 
                             <?= tombol_ubah($r, 'ubahPendaftaran') ?>
@@ -342,9 +275,214 @@ include 'includes/header.php';
         </table>
     </div>
 
-    <?= buat_paging($total, $halaman, count($data)) ?>
+    <?= buat_paging($total, $halaman, count($data), PER_HALAMAN_PENDAFTARAN) ?>
 
 </section>
 
+
+<script>
+// ============================================================
+// pendaftaran.js
+// Popup "Ubah Pendaftaran" + popup konfirmasi "Apakah anda yakin...?"
+// Popup LIHAT tetap memakai bukaLihat() bawaan project.
+// ============================================================
+
+// Membuat elemen HTML dengan aman (isi teks tidak pernah dibaca sebagai HTML)
+function pdEl(tag, kelas, teks) {
+    var el = document.createElement(tag);
+    if (kelas) el.className = kelas;
+    if (teks !== undefined) el.textContent = teks;
+    return el;
+}
+
+// Membuat satu kolom form: label + input
+function pdField(label, input, wajib, penuh) {
+    var wrap = pdEl('div', 'fld' + (penuh ? ' full' : ''));
+    var lab = pdEl('label', '', label + ' ');
+    if (wajib) lab.appendChild(pdEl('i', '', '*'));
+    wrap.appendChild(lab);
+    wrap.appendChild(input);
+    return wrap;
+}
+
+function pdInput(tipe, nama, nilai) {
+    var el = document.createElement('input');
+    el.type = tipe;
+    if (nama) el.name = nama;
+    el.value = nilai || '';
+    return el;
+}
+
+// Menutup popup paling atas
+function pdTutup(back) {
+    if (back && back.parentNode) back.parentNode.removeChild(back);
+}
+
+// ---------- Popup konfirmasi: "Apakah anda yakin ingin merubah data tersebut?" ----------
+function pdKonfirmasi(pesan, saatIya) {
+    var back = pdEl('div', 'mback pd-konfirmasi');
+    back.setAttribute('role', 'dialog');
+    back.setAttribute('aria-modal', 'true');
+    back.style.zIndex = 150;   // di atas popup Ubah
+
+    var box = pdEl('div', 'mbox pd-kecil');
+    var head = pdEl('div', 'mhead');
+    head.appendChild(pdEl('h3', '', 'Konfirmasi'));
+    var body = pdEl('div', 'mbody');
+    body.appendChild(pdEl('p', 'confirm', pesan));
+
+    var foot = pdEl('div', 'mfoot');
+    var tidak = pdEl('button', 'btn ghost', 'Tidak');
+    tidak.type = 'button';
+    var iya = pdEl('button', 'btn', 'Iya');
+    iya.type = 'button';
+    foot.appendChild(tidak);
+    foot.appendChild(iya);
+
+    box.appendChild(head);
+    box.appendChild(body);
+    box.appendChild(foot);
+    back.appendChild(box);
+    document.body.appendChild(back);
+    iya.focus();
+
+    tidak.onclick = function () { pdTutup(back); };
+    iya.onclick = function () {
+        iya.disabled = true;
+        tidak.disabled = true;
+        saatIya();
+    };
+    back.addEventListener('click', function (ev) {
+        if (ev.target === back) pdTutup(back);
+    });
+}
+
+// ---------- Popup UBAH pendaftaran ----------
+function ubahPendaftaran(tombol) {
+    var d = JSON.parse(tombol.dataset.json);
+
+    var back = pdEl('div', 'mback pd-ubah');
+    back.setAttribute('role', 'dialog');
+    back.setAttribute('aria-modal', 'true');
+
+    var box = pdEl('div', 'mbox');
+
+    // kepala popup
+    var head = pdEl('div', 'mhead');
+    head.appendChild(pdEl('h3', '', 'Ubah Pendaftaran'));
+    var x = pdEl('button', 'pd-x');
+    x.type = 'button';
+    x.setAttribute('aria-label', 'Tutup');
+    x.textContent = '×';
+    head.appendChild(x);
+
+    // formulir
+    var form = document.createElement('form');
+    form.method = 'post';
+    form.action = 'pendaftaran.php';
+    form.className = 'pd-form';
+
+    var tersembunyi = [['aksi', 'simpan'], ['id', d.id], ['kembali', window.location.search]];
+    tersembunyi.forEach(function (h) {
+        form.appendChild(pdInput('hidden', h[0], h[1]));
+    });
+
+    var body = pdEl('div', 'mbody');
+    var grid = pdEl('div', 'fgrid');
+
+    var nama = pdInput('text', 'nama', d.nama);
+    nama.required = true;
+    nama.placeholder = 'Contoh: Andi Pratama';
+    grid.appendChild(pdField('Nama Lengkap', nama, true));
+
+    // Jenis layanan: diisi oleh pengguna saat mendaftar, admin hanya melihat
+    var layanan = pdInput('text', '', d.Jenis_Layanan || '-');
+    layanan.readOnly = true;
+    layanan.tabIndex = -1;
+    grid.appendChild(pdField('Jenis Layanan', layanan, false));
+
+    var email = pdInput('email', 'email', d.email);
+    email.placeholder = 'nama@email.co.id';
+    grid.appendChild(pdField('Email', email, false));
+
+    var telepon = pdInput('tel', 'telepon', d.telepon);
+    telepon.placeholder = '0812-0000-0000';
+    grid.appendChild(pdField('Telepon', telepon, false));
+
+    var tanggal = pdInput('date', 'tanggal', d.tanggal);
+    tanggal.required = true;
+    grid.appendChild(pdField('Tanggal Daftar', tanggal, true));
+
+    // Status: di sinilah admin memproses Disetujui / Ditolak / Menunggu Verifikasi
+    var status = document.createElement('select');
+    status.name = 'status';
+    ['Menunggu Verifikasi', 'Disetujui', 'Ditolak'].forEach(function (s) {
+        var o = document.createElement('option');
+        o.value = s;
+        o.textContent = s;
+        if (s === d.status) o.selected = true;
+        status.appendChild(o);
+    });
+    grid.appendChild(pdField('Status', status, false));
+
+    // Nomor antrean: otomatis, dibuat saat status pertama kali diproses
+    var nomor = pdInput('text', '', d.Nomor_Antrian ? d.Nomor_Antrian : 'Otomatis setelah diproses');
+    nomor.readOnly = true;
+    nomor.tabIndex = -1;
+    grid.appendChild(pdField('Nomor Antrean', nomor, false));
+
+    body.appendChild(grid);
+    form.appendChild(body);
+
+    // kaki popup
+    var foot = pdEl('div', 'mfoot');
+    var kembali = pdEl('button', 'btn ghost', 'Kembali');
+    kembali.type = 'button';
+    var simpan = pdEl('button', 'btn', 'Simpan Perubahan');
+    simpan.type = 'submit';
+    foot.appendChild(kembali);
+    foot.appendChild(simpan);
+    form.appendChild(foot);
+
+    box.appendChild(head);
+    box.appendChild(form);
+    back.appendChild(box);
+    document.body.appendChild(back);
+    nama.focus();
+
+    // tutup popup
+    x.onclick = kembali.onclick = function () { pdTutup(back); };
+    back.addEventListener('mousedown', function (ev) {
+        if (ev.target === back) pdTutup(back);
+    });
+    back.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Escape' && !document.querySelector('.pd-konfirmasi')) pdTutup(back);
+    });
+
+    // Simpan Perubahan -> tanya dulu "Apakah anda yakin...?"
+    form.addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        if (!form.reportValidity()) return;
+        pdKonfirmasi('Apakah anda yakin ingin merubah data tersebut?', function () {
+            form.submit();   // Iya -> simpan, lalu kembali ke Data Pendaftaran
+        });
+    });
+}
+
+// ---------- Popup LIHAT detail ----------
+function lihatPendaftaran(tombol) {
+    var d = JSON.parse(tombol.dataset.json);
+
+    bukaLihat('Detail Pendaftaran', [
+        ['Nama Lengkap',    d.nama],
+        ['Jenis Layanan',   d.Jenis_Layanan],
+        ['Nomor Antrean',   d.Nomor_Antrian ? d.Nomor_Antrian : '-'],
+        ['Email',           d.email],
+        ['Telepon',         d.telepon],
+        ['Tanggal Daftar',  tgl(d.tanggal)],
+        ['Status',          pill(d.status), true]
+    ]);   // hanya tombol "Tutup" (sama seperti popup lihat di halaman Antrian)
+}
+</script>
 
 <?php include 'includes/footer.php'; ?>
