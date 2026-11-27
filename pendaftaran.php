@@ -357,7 +357,7 @@ function pdKonfirmasi(pesan, saatIya) {
     });
 }
 
-// ---------- Popup UBAH pendaftaran ----------
+// Popup UBAH pendaftaran
 function ubahPendaftaran(tombol) {
     var d = JSON.parse(tombol.dataset.json);
 
@@ -469,7 +469,6 @@ function ubahPendaftaran(tombol) {
     });
 }
 
-// tes123
 // ---------- Popup LIHAT detail ----------
 function lihatPendaftaran(tombol) {
     var d = JSON.parse(tombol.dataset.json);
