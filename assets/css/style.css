@@ -35,7 +35,6 @@
     --sb-c: 78px;
 }
 
-/* ===== Tambahan dasar (di versi HTML sebelumnya ini disediakan otomatis oleh platform) ===== */
 :root{
   color-scheme:light;
   padding-top:env(safe-area-inset-top,0px);
@@ -86,7 +85,6 @@ h1,h2,h3,p{
   color:var(--muted);
 }
 
-/* ---------- Shell ---------- */
 .app{
   display:flex;
   height:100%
@@ -453,7 +451,6 @@ h1,h2,h3,p{
     }
 }
 
-/* ---------- Common ---------- */
 .card {
     background: var(--card);
     border-radius: var(--r);
@@ -580,8 +577,6 @@ h1,h2,h3,p{
     background: var(--gray-50);
     color: var(--gray);
 }
-
-/* ---------- Tables ---------- */
 
 .tcard {
     overflow: hidden;

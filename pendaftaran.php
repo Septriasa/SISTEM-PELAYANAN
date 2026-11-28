@@ -6,7 +6,7 @@ $admin_login = cek_login($koneksi);
 $daftar_status = array('Menunggu Verifikasi', 'Disetujui', 'Ditolak');
 
 // Jumlah data per halaman khusus halaman ini
-define('PER_HALAMAN_PENDAFTARAN', 12);
+define('PER_HALAMAN_PENDAFTARAN', 10);
 
 // Membuat nomor antrean berikutnya: 4 digit (0001, 0002, ...), berlanjut per bulan pendaftaran
 function buat_nomor_antrean($koneksi, $tanggal)
@@ -58,8 +58,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         } elseif ($email != '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
             set_pesan('Format email belum benar.', 'err');
 
-        } elseif (!in_array($status, $daftar_status)) {
-            set_pesan('Status tidak valid.', 'err');
+        } elseif (!in_array($status, array('Disetujui', 'Ditolak'))) {
+            set_pesan('Pilih status Disetujui atau Ditolak.', 'err');
 
         } else {
             // nomor antrean dibuat otomatis saat pertama kali diproses (disetujui / ditolak)
@@ -357,7 +357,7 @@ function pdKonfirmasi(pesan, saatIya) {
     });
 }
 
-// Popup UBAH pendaftaran
+// ---------- Popup UBAH pendaftaran ----------
 function ubahPendaftaran(tombol) {
     var d = JSON.parse(tombol.dataset.json);
 
@@ -413,17 +413,27 @@ function ubahPendaftaran(tombol) {
     tanggal.required = true;
     grid.appendChild(pdField('Tanggal Daftar', tanggal, true));
 
-    // Status: di sinilah admin memproses Disetujui / Ditolak / Menunggu Verifikasi
+    // Status: di sinilah admin memproses Disetujui / Ditolak
     var status = document.createElement('select');
     status.name = 'status';
-    ['Menunggu Verifikasi', 'Disetujui', 'Ditolak'].forEach(function (s) {
+    status.required = true;
+    if (d.status !== 'Disetujui' && d.status !== 'Ditolak') {
+        // pendaftaran baru yang belum diproses: admin wajib memilih dulu
+        var kosong = document.createElement('option');
+        kosong.value = '';
+        kosong.textContent = 'Pilih status...';
+        kosong.disabled = true;
+        kosong.selected = true;
+        status.appendChild(kosong);
+    }
+    ['Disetujui', 'Ditolak'].forEach(function (s) {
         var o = document.createElement('option');
         o.value = s;
         o.textContent = s;
         if (s === d.status) o.selected = true;
         status.appendChild(o);
     });
-    grid.appendChild(pdField('Status', status, false));
+    grid.appendChild(pdField('Status', status, true));
 
     // Nomor antrean: otomatis, dibuat saat status pertama kali diproses
     var nomor = pdInput('text', '', d.Nomor_Antrian ? d.Nomor_Antrian : 'Otomatis setelah diproses');
